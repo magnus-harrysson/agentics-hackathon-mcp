@@ -63,14 +63,14 @@ When running FastAPI only, the server will be available at `http://localhost:800
 
 ### Configuration for MCP clients
 
-Add this configuration to your MCP settings file:  
+Add this configuration to your MCP settings file (Replace <path-to-repo>):  
 
 ```json
 {
   "mcpServers": {
     "hello-world-python": {
-      "command": "/Users/magnus/Documents/Cline/MCP/hello-world-python/venv/bin/python",
-      "args": ["/Users/magnus/Documents/Cline/MCP/hello-world-python/server.py"]
+      "command": "/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/hello-world-python/venv/bin/python",
+      "args": ["/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/hello-world-python/server.py"]
     }
   }
 }

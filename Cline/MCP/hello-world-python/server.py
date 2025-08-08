@@ -44,6 +44,72 @@ def hello(name: str) -> str:
     greeting = f"Hello, {name}! 👋 Welcome to the Hello World MCP server!"
     return greeting
 
+@mcp.tool()
+async def fetch_pet_api_spec(format: str = "json") -> str:
+    """Fetch the PET API (Swagger Petstore) OpenAPI specification.
+    
+    Args:
+        format: The format to return the specification in ("json" or "yaml")
+        
+    Returns:
+        The OpenAPI specification in the requested format
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(OPENAPI_SPEC_URL)
+            response.raise_for_status()
+            
+        if format.lower() == "yaml":
+            return response.text
+        elif format.lower() == "json":
+            # Parse YAML and convert to JSON
+            yaml_content = response.text
+            parsed_yaml = yaml.safe_load(yaml_content)
+            return json.dumps(parsed_yaml, indent=2)
+        else:
+            raise ValueError(f"Unsupported format: {format}. Use 'json' or 'yaml'")
+            
+    except httpx.HTTPError as e:
+        logger.error(f"Error fetching OpenAPI spec: {e}")
+        return f"Error: Failed to fetch OpenAPI specification: {str(e)}"
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing YAML: {e}")
+        return f"Error: Failed to parse YAML content: {str(e)}"
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return f"Error: Unexpected error occurred: {str(e)}"
+
+@mcp.tool()
+async def get_pet_api_info() -> str:
+    """Get basic information about the PET API specification.
+    
+    Returns:
+        Basic information about the PET API including title, version, and description
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(OPENAPI_SPEC_URL)
+            response.raise_for_status()
+            
+        # Parse YAML to extract basic info
+        yaml_content = response.text
+        parsed_yaml = yaml.safe_load(yaml_content)
+        
+        info = {
+            "title": parsed_yaml.get("info", {}).get("title", "Unknown"),
+            "version": parsed_yaml.get("info", {}).get("version", "Unknown"),
+            "description": parsed_yaml.get("info", {}).get("description", "No description available"),
+            "base_url": parsed_yaml.get("servers", [{}])[0].get("url", "Unknown") if parsed_yaml.get("servers") else "Unknown",
+            "paths_count": len(parsed_yaml.get("paths", {})),
+            "available_paths": list(parsed_yaml.get("paths", {}).keys())
+        }
+        
+        return json.dumps(info, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Error getting API info: {e}")
+        return f"Error: Failed to get API information: {str(e)}"
+
 @api.get("/")
 async def root():
     """Root endpoint with basic information."""
