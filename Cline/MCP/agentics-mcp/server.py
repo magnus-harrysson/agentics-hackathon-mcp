@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-A simple Hello World MCP server in Python using fastMCP with FastAPI endpoints.
+A MCP server in Python using fastMCP with FastAPI endpoints.
 This server provides basic greeting tools to demonstrate MCP functionality
 and includes FastAPI endpoints for OpenAPI specification retrieval.
 """
@@ -23,7 +23,7 @@ logger = logging.getLogger("agentics-mcp")
 mcp = FastMCP("agentics-mcp")
 
 api = FastAPI(
-    title="Hello World MCP Server with OpenAPI",
+    title="MCP Server with OpenAPI functionality",
     description="A simple MCP server with FastAPI endpoints for OpenAPI specification retrieval",
     version="1.0.0"
 )
@@ -45,14 +45,15 @@ def hello(name: str) -> str:
     return greeting
 
 @mcp.tool()
-async def fetch_pet_api_spec(format: str = "json") -> str:
+async def fetch_pet_api_spec(format: str = "json", save_to_file: str = None) -> str:
     """Fetch the PET API (Swagger Petstore) OpenAPI specification.
     
     Args:
         format: The format to return the specification in ("json" or "yaml")
+        save_to_file: Optional file path to save the specification to. If provided, the spec will be saved to this file.
         
     Returns:
-        The OpenAPI specification in the requested format
+        The OpenAPI specification in the requested format, or a success message if saved to file
     """
     try:
         async with httpx.AsyncClient() as client:
@@ -60,14 +61,27 @@ async def fetch_pet_api_spec(format: str = "json") -> str:
             response.raise_for_status()
             
         if format.lower() == "yaml":
-            return response.text
+            content = response.text
         elif format.lower() == "json":
             # Parse YAML and convert to JSON
             yaml_content = response.text
             parsed_yaml = yaml.safe_load(yaml_content)
-            return json.dumps(parsed_yaml, indent=2)
+            content = json.dumps(parsed_yaml, indent=2)
         else:
             raise ValueError(f"Unsupported format: {format}. Use 'json' or 'yaml'")
+        
+        # If save_to_file is provided, save the content to the file
+        if save_to_file:
+            try:
+                with open(save_to_file, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                return f"OpenAPI specification successfully saved to '{save_to_file}' in {format.upper()} format"
+            except IOError as e:
+                logger.error(f"Error saving file: {e}")
+                return f"Error: Failed to save file '{save_to_file}': {str(e)}"
+        
+        # Otherwise, return the content
+        return content
             
     except httpx.HTTPError as e:
         logger.error(f"Error fetching OpenAPI spec: {e}")

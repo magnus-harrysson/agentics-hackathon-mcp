@@ -69,8 +69,8 @@ Add this configuration to your MCP settings file (Replace <path-to-repo>):
 {
   "mcpServers": {
     "hello-world-python": {
-      "command": "/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/hello-world-python/venv/bin/python",
-      "args": ["/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/hello-world-python/server.py"]
+      "command": "/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/agentics-mcp/venv/bin/python",
+      "args": ["/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/agentics-mcp/server.py"]
     }
   }
 }
