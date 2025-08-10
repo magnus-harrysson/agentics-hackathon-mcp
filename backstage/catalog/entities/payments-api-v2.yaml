@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: payments-api
+  description: Payments domain API (v2 - current)
+  annotations:
+    backstage.io/owner: team-payments
+    demo/version: v2
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-payments
+  system: commerce
+  definition: ../apis/payments-v2.yaml

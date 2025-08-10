@@ -1,0 +1,79 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: 1.0.0
+  description: API for creating and retrieving payments (v1 - deprecated)
+paths:
+  /payments:
+    post:
+      summary: Create payment
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amountCents, currency]
+              properties:
+                amountCents:
+                  type: integer
+                  description: Amount in minor units (cents)
+                  example: 1299
+                currency:
+                  type: string
+                  example: USD
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status, amountCents, currency]
+                properties:
+                  id:
+                    type: string
+                    example: pay_123
+                  status:
+                    type: string
+                    description: Payment status
+                    example: pending
+                  amountCents:
+                    type: integer
+                    example: 1299
+                  currency:
+                    type: string
+                    example: USD
+  /payments/{id}:
+    get:
+      summary: Get payment
+      operationId: getPayment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: pay_123
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status, amountCents, currency]
+                properties:
+                  id:
+                    type: string
+                    example: pay_123
+                  status:
+                    type: string
+                    example: authorized
+                  amountCents:
+                    type: integer
+                    example: 1299
+                  currency:
+                    type: string
+                    example: USD

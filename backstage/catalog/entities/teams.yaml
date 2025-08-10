@@ -1,0 +1,46 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-payments
+  description: Team responsible for the Payments API and related services
+spec:
+  type: team
+  profile:
+    displayName: Team Payments
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-checkout
+  description: Team owning checkout-service
+spec:
+  type: team
+  profile:
+    displayName: Team Checkout
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-subscriptions
+  description: Team owning subscriptions-service
+spec:
+  type: team
+  profile:
+    displayName: Team Subscriptions
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-commerce
+  description: Commerce platform owning the commerce system
+spec:
+  type: team
+  profile:
+    displayName: Team Commerce
+  children: []

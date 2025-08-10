@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: payments-api-v1
+  description: Payments domain API (v1 - deprecated)
+  annotations:
+    backstage.io/owner: team-payments
+    demo/version: v1
+spec:
+  type: openapi
+  lifecycle: deprecated
+  owner: team-payments
+  system: commerce
+  definition: ../apis/payments-v1.yaml

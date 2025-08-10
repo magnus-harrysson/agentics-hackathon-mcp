@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: mcp-demo-catalog
+  description: Root Backstage location for MCP demo entities
+spec:
+  targets:
+    - ./entities/*.yaml
