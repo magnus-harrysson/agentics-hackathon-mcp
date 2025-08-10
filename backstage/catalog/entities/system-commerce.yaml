@@ -1,0 +1,7 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: commerce
+  description: Commerce system containing checkout, subscriptions, and payments capabilities
+spec:
+  owner: team-commerce

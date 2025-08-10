@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: 2.0.0
+  description: API for creating and retrieving payments (v2 - current). Introduces idempotency and decimal amounts.
+paths:
+  /v2/payments:
+    post:
+      summary: Create payment
+      operationId: createPaymentV2
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          description: Unique key to guarantee idempotency of the request
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, currency]
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  description: Amount in major units with 2 decimal places
+                  example: 12.99
+                currency:
+                  type: string
+                  example: USD
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [paymentId, state, amount, currency]
+                properties:
+                  paymentId:
+                    type: string
+                    example: pay_abc
+                  state:
+                    type: string
+                    description: Current state of the payment
+                    enum: [pending, authorized, captured, failed]
+                    example: pending
+                  amount:
+                    type: number
+                    format: decimal
+                    example: 12.99
+                  currency:
+                    type: string
+                    example: USD
+  /v2/payments/{paymentId}:
+    get:
+      summary: Get payment
+      operationId: getPaymentV2
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: string
+          example: pay_abc
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [paymentId, state, amount, currency]
+                properties:
+                  paymentId:
+                    type: string
+                    example: pay_abc
+                  state:
+                    type: string
+                    enum: [pending, authorized, captured, failed]
+                    example: authorized
+                  amount:
+                    type: number
+                    format: decimal
+                    example: 12.99
+                  currency:
+                    type: string
+                    example: USD

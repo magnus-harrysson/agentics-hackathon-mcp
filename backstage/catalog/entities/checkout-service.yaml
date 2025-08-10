@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout-service
+  description: Service handling checkout workflows and payment initiation
+spec:
+  type: service
+  lifecycle: production
+  owner: team-checkout
+  system: commerce
+  consumesApis:
+    - api:default/payments-api-v1
