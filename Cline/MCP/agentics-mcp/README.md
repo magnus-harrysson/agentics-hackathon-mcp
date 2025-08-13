@@ -1,15 +1,14 @@
 # Hello World MCP Server (Python)
 
-A simple "Hello World" Model Context Protocol (MCP) server implemented in Python using fastMCP with FastAPI endpoints. This server demonstrates the basic functionality of MCP by providing greeting and echo tools, plus FastAPI endpoints for fetching OpenAPI specifications.
+A simple "Hello World" Model Context Protocol (MCP) server implemented in Python using fastMCP with FastAPI endpoints. This server demonstrates the basic functionality of MCP by providing tools to interact with the Swagger Petstore OpenAPI specification, plus FastAPI endpoints for fetching OpenAPI specifications.
 
 ## Features
 
 ### MCP Tools
-This MCP server provides three tools:
+This MCP server provides two tools:
 
-1. **hello** - Greets a person by name
-2. **fetch_pet_api_spec** - Fetch the PET API (Swagger Petstore) OpenAPI specification
-3. **get_pet_api_info** - Get basic information about the PET API specification
+1. **fetch_pet_api_spec** - Fetch the PET API (Swagger Petstore) OpenAPI specification
+2. **get_pet_api_info** - Get basic information about the PET API specification
 
 ### FastAPI Endpoints
 The server also includes FastAPI endpoints:
@@ -79,24 +78,6 @@ Add this configuration to your MCP settings file (Replace <path-to-repo>):
 ```
 
 ## Tools
-
-### hello
-Greets a person by name.
-
-**Parameters:**
-- `name` (string, required): Name of the person to greet
-
-**Example:**
-```json
-{
-  "name": "Alice"
-}
-```
-
-**Response:**
-```
-Hello, Alice! 👋 Welcome to the Hello World MCP server!
-```
 
 ### fetch_pet_api_spec
 Fetch the PET API (Swagger Petstore) OpenAPI specification in JSON or YAML format, with optional file saving capability.

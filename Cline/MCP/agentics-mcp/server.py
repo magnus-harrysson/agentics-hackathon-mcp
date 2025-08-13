@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 A MCP server in Python using fastMCP with FastAPI endpoints.
-This server provides basic greeting tools to demonstrate MCP functionality
+This server provides tools to demonstrate MCP functionality
 and includes FastAPI endpoints for OpenAPI specification retrieval.
 """
 
@@ -30,19 +30,6 @@ api = FastAPI(
 
 # OpenAPI specification URL
 OPENAPI_SPEC_URL = "https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml"
-
-@mcp.tool()
-def hello(name: str) -> str:
-    """A simple greeting tool that says hello to someone.
-    
-    Args:
-        name: Name of the person to greet
-        
-    Returns:
-        A greeting message
-    """
-    greeting = f"Hello, {name}! 👋 Welcome to the Hello World MCP server!"
-    return greeting
 
 @mcp.tool()
 async def fetch_pet_api_spec(format: str = "json", save_to_file: str = None) -> str:

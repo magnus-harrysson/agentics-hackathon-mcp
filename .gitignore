@@ -206,9 +206,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-.idea/workspace.xml
 Cline/.DS_Store
 .gitignore
 Cline/MCP/hello-world-python/.DS_Store
 Cline/MCP/.DS_Store
 .DS_Store
+.idea/*
