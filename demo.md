@@ -2,7 +2,7 @@
 
 Purpose: Demonstrate an MCP server that connects to Backstage’s Software Catalog to pull API/component context (OpenAPI specs, ownership, versions, relations) so an AI agent can guide and automate migration of dependent services when a new API version is released.
 
-Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a) discover a breaking Payments API v2, (b) fetch/diff v1→v2 from Backstage, (c) generate/apply a minimal migration for one service (checkout-service), and (d) kick off follow-up work for another dependent service (subscriptions-service).
+Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a) discover a breaking Payments API v2, (b) fetch/diff v1→v2 from Backstage, (c) generate/apply a minimal migration for one service (order-service), and (d) kick off follow-up work for another dependent service (subscriptions-service).
 
 ---
 
@@ -16,10 +16,10 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
 - Entities in Backstage
   - API: Payments API (v1 deprecated, v2 current)
   - Components:
-    - checkout-service (Node/TypeScript)
+    - order-service (Node/TypeScript)
     - subscriptions-service (Python/FastAPI)
   - Relations:
-    - checkout-service and subscriptions-service depend on Payments API
+    - order-service and subscriptions-service depend on Payments API
 
 - MCP Server Capabilities (for demo narrative)
   - Discover entities: list APIs/components, filter by relations/annotations
@@ -45,10 +45,10 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
 - Show the Backstage Catalog page for Payments API.
   - Point out: Two versions visible, v1 (deprecated) and v2 (current), with a deprecation date banner. **Highlight what a common scenario this is and the negative effects that legacy code has on operational efficiency**. 
   - The API entity has links to OpenAPI definitions for both versions, ownership, and dependents.
-- Transition: “We’ll migrate checkout-service to Payments API v2 in under 3 minutes using our Backstage MCP server.”
+- Transition: “We’ll migrate order-service to Payments API v2 in under 3 minutes using our Backstage MCP server.”
 
 00:30–01:15 — Show the Problem
-- Open checkout-service repo (a small Node/TS snippet visible) in Visual Studio Code with Cline installed.
+- Open order-service repo (a small Node/TS snippet visible) in Visual Studio Code with Cline installed.
   - Show a v1 call: POST /payments with body containing amountCents and no Idempotency-Key header; and GET /payments/{id} to poll status.
 - Run a quick test or curl that hits the v1 endpoint(s).
   - Display a response header warning (e.g., Deprecation: true).
@@ -57,7 +57,7 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
 01:15–02:30 — Use MCP + Backstage Context
 - Prompt the assistant to discover and diff from Backstage:
   ```
-  Using Backstage, locate the Payments API, fetch OpenAPI v1 and v2, and produce a developer-friendly diff highlighting breaking changes that affect checkout-service.
+  Using Backstage, locate the Payments API, fetch OpenAPI v1 and v2, and produce a developer-friendly diff highlighting breaking changes that affect order-service.
   ```
 - Assistant calls the MCP server:
   - Finds Payments API entity, pulls OpenAPI v1 and v2.
@@ -66,12 +66,12 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
     - Required header on POST: Idempotency-Key (string)
     - Request field: amountCents (integer) → amount (number with 2 decimals)
     - Response field: status → state (enum narrowed)
-- Optional: Show it also lists dependents and confirms checkout-service and subscriptions-service are impacted.
+- Optional: Show it also lists dependents and confirms order-service and subscriptions-service are impacted.
 
-02:30–03:30 — Generate and Apply Migration for checkout-service
+02:30–03:30 — Generate and Apply Migration for order-service
 - Prompt the assistant:
   ```
-  Propose a minimal safe patch for checkout-service to adopt Payments API v2. Include:
+  Propose a minimal safe patch for order-service to adopt Payments API v2. Include:
   - Update endpoints: /payments → /v2/payments and /payments/{id} → /v2/payments/{paymentId}
   - Add Idempotency-Key header for POST (read from ENV or generated UUID)
   - Map request field amountCents → amount (convert integer cents → decimal string)
@@ -82,7 +82,7 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
   - A small patch/diff (1–3 files) with code changes and a brief unit test or contract test update.
   - PR text with links to the Backstage entity and summary of changes/breaking notes.
 - Apply the patch (pre-baked branch is fine). Show tests quickly running green or a small smoke test.
-- Transition: “checkout-service is done; now let’s address other dependents.”
+- Transition: “order-service is done; now let’s address other dependents.”
 
 03:30–04:00 — Plan for subscriptions-service and Broadcast
 - Prompt the assistant:
@@ -105,11 +105,11 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
     - lifecycle: v1 deprecated, v2 current
     - owner/team/system annotations
   - Components:
-    - checkout-service and subscriptions-service with relations indicating dependency on Payments API
+    - order-service and subscriptions-service with relations indicating dependency on Payments API
 - OpenAPI specs
   - v1 and v2 files reflecting the breaking changes listed above
 - Repos (lightweight)
-  - checkout-service (Node/TS)
+  - order-service (Node/TS)
     - Has a simple function creating a payment via POST /payments (v1) with amountCents; a small test
     - Branch ready for applying the automated patch (or pre-created PR for backup)
   - subscriptions-service (Python/FastAPI)
@@ -136,5 +136,5 @@ Outcome: In 4 minutes, show how a developer uses an MCP-enabled assistant to (a)
 
 - Clear linkage from Backstage catalog → assistant context → concrete developer actions.
 - A crisp v1→v2 diff surfaced by the assistant in seconds for Payments API.
-- A small, believable code change applied to checkout-service and verified.
+- A small, believable code change applied to order-service and verified.
 - Evidence of scalable coordination: generated PR for subscriptions-service with proper references.
