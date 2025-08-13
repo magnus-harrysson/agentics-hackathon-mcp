@@ -13,12 +13,12 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: Group
 metadata:
-  name: team-checkout
-  description: Team owning checkout-service
+  name: team-orders
+  description: Team owning order-service
 spec:
   type: team
   profile:
-    displayName: Team Checkout
+    displayName: Team Orders
   children: []
 
 ---

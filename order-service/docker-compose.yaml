@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  order-service:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+
+  payments-v1-mock:
+    image: stoplight/prism:latest
+    ports:
+      - "4010:4010"
+    volumes:
+      - ../backstage/catalog/apis/payments-v1.yaml:/payments-v1.yaml
+    command: mock -h 0.0.0.0 -p 4010 /payments-v1.yaml
+
+  payments-v2-mock:
+    image: stoplight/prism:latest
+    ports:
+      - "4011:4011"
+    volumes:
+      - ../backstage/catalog/apis/payments-v2.yaml:/payments-v2.yaml
+    command: mock -h 0.0.0.0 -p 4011 /payments-v2.yaml
