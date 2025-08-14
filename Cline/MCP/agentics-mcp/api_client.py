@@ -386,7 +386,7 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
             # Get the response data
             response_data = response.json()
             
-            # Extract component information
+            # Extract component information including relations
             components = []
             for item in response_data.get('items', []):
                 component_info = {
@@ -397,7 +397,8 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
                     "system": item.get('spec', {}).get('system', ''),
                     "type": item.get('spec', {}).get('type', ''),
                     "lifecycle": item.get('spec', {}).get('lifecycle', ''),
-                    "owner": item.get('spec', {}).get('owner', '')
+                    "owner": item.get('spec', {}).get('owner', ''),
+                    "relations": item.get('relations', [])
                 }
                 components.append(component_info)
             
