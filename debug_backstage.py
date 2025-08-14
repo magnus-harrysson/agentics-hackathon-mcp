@@ -78,5 +78,20 @@ async def main():
         print(f"Error getting API entity: {e}")
         print()
 
+    print("5. Testing new Mermaid generation tool...")
+    try:
+        from mcp_client import generate_mermaid_for_component
+        
+        # Test the mermaid generation directly
+        mermaid_result = await generate_mermaid_for_component("order-service")
+        print("Mermaid Diagram for order-service:")
+        print(mermaid_result)
+        print()
+    except Exception as e:
+        print(f"Error testing mermaid generation: {e}")
+        import traceback
+        traceback.print_exc()
+        print()
+
 if __name__ == "__main__":
     asyncio.run(main())
