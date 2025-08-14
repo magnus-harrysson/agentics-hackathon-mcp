@@ -28,7 +28,7 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", f
     import random
     
     # Retry configuration
-    max_retries = 3
+    max_retries = 5
     base_delay = 1.0  # seconds
     
     for attempt in range(max_retries):
@@ -144,7 +144,7 @@ async def fetch_backstage_component_relations(component_name: str = "aldente-ser
     import random
     
     # Retry configuration
-    max_retries = 3
+    max_retries = 5
     base_delay = 1.0  # seconds
     
     for attempt in range(max_retries):
@@ -239,7 +239,7 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
     import random
     
     # Retry configuration
-    max_retries = 3
+    max_retries = 5
     base_delay = 1.0  # seconds
     
     for attempt in range(max_retries):
@@ -353,7 +353,7 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
     import random
     
     # Retry configuration
-    max_retries = 3
+    max_retries = 5
     base_delay = 1.0  # seconds
     
     for attempt in range(max_retries):
