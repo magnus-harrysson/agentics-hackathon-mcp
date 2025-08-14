@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-commerce
+  description: Commerce platform owning the commerce system
+spec:
+  type: team
+  profile:
+    displayName: Team Commerce
+  children: []

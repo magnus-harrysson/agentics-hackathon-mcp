@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-payments
+  description: Team responsible for the Payments API and related services
+spec:
+  type: team
+  profile:
+    displayName: Team Payments
+  children: []
