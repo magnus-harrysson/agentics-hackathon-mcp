@@ -3,6 +3,9 @@ info:
   title: Payments API
   version: 1.0.0
   description: API for creating and retrieving payments (v1 - deprecated)
+servers:
+  - url: http://localhost:4010
+    description: Local development server
 paths:
   /payments:
     post:
