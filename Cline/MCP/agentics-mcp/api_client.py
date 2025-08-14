@@ -73,6 +73,17 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", f
             # Get the response data and clean up newline characters
             response_data = response.json()
             
+            # Clean up metadata by removing unwanted fields
+            if 'metadata' in response_data:
+                metadata = response_data['metadata']
+                # Keep only name and description, remove annotations, namespace, uid, etag
+                cleaned_metadata = {}
+                if 'name' in metadata:
+                    cleaned_metadata['name'] = metadata['name']
+                if 'description' in metadata:
+                    cleaned_metadata['description'] = metadata['description']
+                response_data['metadata'] = cleaned_metadata
+            
             # If a specific field is requested, extract it
             if field:
                 field_data = response_data.get(field, [])
