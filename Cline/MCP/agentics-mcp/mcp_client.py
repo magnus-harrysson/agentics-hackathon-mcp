@@ -7,6 +7,7 @@ This module contains all the MCP-related functionality separated from the main s
 import logging
 from fastmcp import FastMCP
 from api_client import fetch_openapi_spec, get_api_info
+from config import config
 
 logger = logging.getLogger("agentics-mcp.mcp_client")
 
@@ -36,6 +37,18 @@ async def get_api_infos() -> str:
         Basic information about the PET API including title, version, and description
     """
     return await get_api_info()
+
+
+@mcp.tool()
+async def get_server_config() -> str:
+    """Get the current server configuration.
+    
+    Returns:
+        Current server configuration including project name, API version, and other settings
+    """
+    import json
+    config_info = config.to_dict()
+    return json.dumps(config_info, indent=2)
 
 
 async def run_mcp():

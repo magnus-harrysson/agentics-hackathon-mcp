@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 from api_client import create_api_routes
 from mcp_client import run_mcp
+from config import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("agentics-mcp")
@@ -28,13 +29,13 @@ create_api_routes(api)
 
 async def run_fastapi():
     """Run the FastAPI server."""
-    config = uvicorn.Config(
+    uvicorn_config = uvicorn.Config(
         app=api,
-        host="0.0.0.0",
-        port=8000,
+        host=config.server_host,
+        port=config.server_port,
         log_level="info"
     )
-    server = uvicorn.Server(config)
+    server = uvicorn.Server(uvicorn_config)
     await server.serve()
 
 
