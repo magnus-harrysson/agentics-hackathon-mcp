@@ -40,12 +40,11 @@ cp .env.config .env
 # MCP Server Configuration
 # Copy this file to .env and fill in your values
 
-# GitHub Configuration
-GITHUB_TOKEN=your_github_token_here
+# Project Configuration
 PROJECT_NAME=agentics-mcp-project
 API_VERSION=v1
 
-# Server Configuration
+# Fast API Server Configuration
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8000
 ```
@@ -54,13 +53,12 @@ SERVER_PORT=8000
 
 | Environment Variable | Description | Default |
 |---------------------|-------------|---------|
-| `GITHUB_TOKEN` | Your GitHub personal access token | None |
 | `PROJECT_NAME` | Name of your project | `agentics-mcp-project` |
 | `API_VERSION` | Current API version | `v1` |
 | `SERVER_HOST` | Server bind address | `0.0.0.0` |
 | `SERVER_PORT` | Server port number | `8000` |
 
-**Security Note**: Always use environment variables for sensitive data like GitHub tokens. Never commit tokens to version control.
+**Note**: The GitHub token should be configured in your MCP client configuration (see MCP Client Configuration section below), not in the .env file.
 
 ## Usage
 
@@ -102,17 +100,25 @@ Add this to your MCP client configuration:
 {
   "mcpServers": {
     "agentics-mcp": {
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 10,
+      "type": "stdio",
       "command": "/path/to/your/venv/bin/python",
       "args": ["/path/to/your/server.py"],
       "env": {
-        "GITHUB_TOKEN": "your_token_here",
-        "PROJECT_NAME": "your-project-name",
-        "API_VERSION": "v1"
+        "GITHUB_TOKEN": "your_github_token_here"
       }
     }
   }
 }
 ```
+
+**Important**: Replace the paths and values with your actual configuration:
+- Update the `command` path to point to your virtual environment's Python executable
+- Update the `args` path to point to your server.py file
+- Set your actual GitHub token in the `GITHUB_TOKEN` environment variable
+- Customize `PROJECT_NAME` and `API_VERSION` as needed
 
 ## Development
 

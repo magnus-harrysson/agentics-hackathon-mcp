@@ -14,6 +14,26 @@ logger = logging.getLogger("agentics-mcp.mcp_client")
 # Create MCP instance
 mcp = FastMCP("agentics-mcp")
 
+@mcp.tool()
+async def get_server_config() -> str:
+    """Get the current server configuration.
+    
+    Returns:
+        Current server configuration including project name, API version, and other settings
+    """
+    import json
+    config_info = config.to_dict()
+    return json.dumps(config_info, indent=2)
+
+@mcp.tool()
+async def get_api_infos() -> str:
+    """Get basic information about the PET API specification.
+    
+    Returns:
+        Basic information about the PET API including title, version, and description
+    """
+    return await get_api_info()
+
 
 @mcp.tool()
 async def fetch_api_specs(format: str = "json", save_to_file: str = None) -> str:
@@ -27,28 +47,6 @@ async def fetch_api_specs(format: str = "json", save_to_file: str = None) -> str
         The OpenAPI specification in the requested format, or a success message if saved to file
     """
     return await fetch_openapi_spec(format, save_to_file)
-
-
-@mcp.tool()
-async def get_api_infos() -> str:
-    """Get basic information about the PET API specification.
-    
-    Returns:
-        Basic information about the PET API including title, version, and description
-    """
-    return await get_api_info()
-
-
-@mcp.tool()
-async def get_server_config() -> str:
-    """Get the current server configuration.
-    
-    Returns:
-        Current server configuration including project name, API version, and other settings
-    """
-    import json
-    config_info = config.to_dict()
-    return json.dumps(config_info, indent=2)
 
 
 async def run_mcp():

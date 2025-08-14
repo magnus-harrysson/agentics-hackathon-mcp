@@ -18,6 +18,37 @@ logger = logging.getLogger("agentics-mcp.api_client")
 OPENAPI_SPEC_URL = "https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml"
 
 
+async def get_api_info() -> str:
+    """Get basic information about the PET API specification.
+    
+    Returns:
+        Basic information about the PET API including title, version, and description
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(OPENAPI_SPEC_URL)
+            response.raise_for_status()
+            
+        # Parse YAML to extract basic info
+        yaml_content = response.text
+        parsed_yaml = yaml.safe_load(yaml_content)
+        
+        info = {
+            "title": parsed_yaml.get("info", {}).get("title", "Unknown"),
+            "version": parsed_yaml.get("info", {}).get("version", "Unknown"),
+            "description": parsed_yaml.get("info", {}).get("description", "No description available"),
+            "base_url": parsed_yaml.get("servers", [{}])[0].get("url", "Unknown") if parsed_yaml.get("servers") else "Unknown",
+            "paths_count": len(parsed_yaml.get("paths", {})),
+            "available_paths": list(parsed_yaml.get("paths", {}).keys())
+        }
+        
+        return json.dumps(info, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Error getting API info: {e}")
+        return f"Error: Failed to get API information: {str(e)}"
+    
+
 async def fetch_openapi_spec(format: str = "json", save_to_file: str = None) -> str:
     """Fetch the PET API (Swagger Petstore) OpenAPI specification.
     
@@ -66,36 +97,6 @@ async def fetch_openapi_spec(format: str = "json", save_to_file: str = None) -> 
         logger.error(f"Unexpected error: {e}")
         return f"Error: Unexpected error occurred: {str(e)}"
 
-
-async def get_api_info() -> str:
-    """Get basic information about the PET API specification.
-    
-    Returns:
-        Basic information about the PET API including title, version, and description
-    """
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(OPENAPI_SPEC_URL)
-            response.raise_for_status()
-            
-        # Parse YAML to extract basic info
-        yaml_content = response.text
-        parsed_yaml = yaml.safe_load(yaml_content)
-        
-        info = {
-            "title": parsed_yaml.get("info", {}).get("title", "Unknown"),
-            "version": parsed_yaml.get("info", {}).get("version", "Unknown"),
-            "description": parsed_yaml.get("info", {}).get("description", "No description available"),
-            "base_url": parsed_yaml.get("servers", [{}])[0].get("url", "Unknown") if parsed_yaml.get("servers") else "Unknown",
-            "paths_count": len(parsed_yaml.get("paths", {})),
-            "available_paths": list(parsed_yaml.get("paths", {}).keys())
-        }
-        
-        return json.dumps(info, indent=2)
-        
-    except Exception as e:
-        logger.error(f"Error getting API info: {e}")
-        return f"Error: Failed to get API information: {str(e)}"
 
 
 async def fetch_openapi_spec_raw() -> httpx.Response:
