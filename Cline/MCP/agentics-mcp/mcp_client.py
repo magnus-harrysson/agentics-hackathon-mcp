@@ -6,7 +6,7 @@ This module contains all the MCP-related functionality separated from the main s
 
 import logging
 from fastmcp import FastMCP
-from api_client import fetch_openapi_spec, get_api_info
+from api_client import fetch_backstage_entity
 from config import config
 
 logger = logging.getLogger("agentics-mcp.mcp_client")
@@ -26,27 +26,16 @@ async def get_server_config() -> str:
     return json.dumps(config_info, indent=2)
 
 @mcp.tool()
-async def get_api_infos() -> str:
-    """Get basic information about the PET API specification.
-    
-    Returns:
-        Basic information about the PET API including title, version, and description
-    """
-    return await get_api_info()
-
-
-@mcp.tool()
-async def fetch_api_specs(format: str = "json", save_to_file: str = None) -> str:
-    """Fetch the PET API (Swagger Petstore) OpenAPI specification.
+async def get_backstage_api_entity(entity_name: str = "aldente-service-api") -> str:
+    """Fetch a Backstage catalog API entity by name using GitHub token authentication.
     
     Args:
-        format: The format to return the specification in ("json" or "yaml")
-        save_to_file: Optional file path to save the specification to. If provided, the spec will be saved to this file.
+        entity_name: The name of the API entity to fetch from Backstage catalog (default: "aldente-service-api")
         
     Returns:
-        The OpenAPI specification in the requested format, or a success message if saved to file
+        The API entity information as JSON string, or error message if failed
     """
-    return await fetch_openapi_spec(format, save_to_file)
+    return await fetch_backstage_entity(entity_name)
 
 
 async def run_mcp():

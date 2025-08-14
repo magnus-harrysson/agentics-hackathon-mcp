@@ -5,128 +5,73 @@ This module contains all the API-related functionality separated from MCP server
 """
 
 import logging
-from typing import Dict, Any
-import yaml
 import json
 import httpx
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi import FastAPI
+from config import config
 
 logger = logging.getLogger("agentics-mcp.api_client")
 
-# OpenAPI specification URL
-OPENAPI_SPEC_URL = "https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml"
 
-
-async def get_api_info() -> str:
-    """Get basic information about the PET API specification.
+async def fetch_backstage_entity(entity_name: str = "aldente-service-api") -> str:
+    """Fetch a Backstage catalog entity by name using GitHub token authentication.
     
+    Args:
+        entity_name: The name of the entity to fetch (default: "aldente-service-api")
+        
     Returns:
-        Basic information about the PET API including title, version, and description
+        The entity information as JSON string, or error message if failed
     """
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(OPENAPI_SPEC_URL)
-            response.raise_for_status()
-            
-        # Parse YAML to extract basic info
-        yaml_content = response.text
-        parsed_yaml = yaml.safe_load(yaml_content)
+        # Check if GitHub token is configured
+        github_token = config.github_token
+        if not github_token:
+            return "Error: GitHub token not configured. Please set the GITHUB_TOKEN environment variable."
         
-        info = {
-            "title": parsed_yaml.get("info", {}).get("title", "Unknown"),
-            "version": parsed_yaml.get("info", {}).get("version", "Unknown"),
-            "description": parsed_yaml.get("info", {}).get("description", "No description available"),
-            "base_url": parsed_yaml.get("servers", [{}])[0].get("url", "Unknown") if parsed_yaml.get("servers") else "Unknown",
-            "paths_count": len(parsed_yaml.get("paths", {})),
-            "available_paths": list(parsed_yaml.get("paths", {}).keys())
+        # Construct the URL using configured base URL
+        base_url = f"{config.backstage_base_url}/api/catalog/entities/by-name/api/default"
+        url = f"{base_url}/{entity_name}"
+        
+        # Set up headers with Bearer token
+        headers = {
+            "Authorization": f"Bearer {github_token}",
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
         
-        return json.dumps(info, indent=2)
+        # Make the API call with SSL verification disabled for internal services
+        # Also add timeout and additional SSL configuration
+        import ssl
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
         
-    except Exception as e:
-        logger.error(f"Error getting API info: {e}")
-        return f"Error: Failed to get API information: {str(e)}"
-    
-
-async def fetch_openapi_spec(format: str = "json", save_to_file: str = None) -> str:
-    """Fetch the PET API (Swagger Petstore) OpenAPI specification.
-    
-    Args:
-        format: The format to return the specification in ("json" or "yaml")
-        save_to_file: Optional file path to save the specification to. If provided, the spec will be saved to this file.
-        
-    Returns:
-        The OpenAPI specification in the requested format, or a success message if saved to file
-    """
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(OPENAPI_SPEC_URL)
+        async with httpx.AsyncClient(
+            verify=False, 
+            timeout=30.0,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        ) as client:
+            logger.info(f"Making request to: {url}")
+            logger.info(f"Headers: {headers}")
+            response = await client.get(url, headers=headers)
+            logger.info(f"Response status: {response.status_code}")
             response.raise_for_status()
             
-        if format.lower() == "yaml":
-            content = response.text
-        elif format.lower() == "json":
-            # Parse YAML and convert to JSON
-            yaml_content = response.text
-            parsed_yaml = yaml.safe_load(yaml_content)
-            content = json.dumps(parsed_yaml, indent=2)
-        else:
-            raise ValueError(f"Unsupported format: {format}. Use 'json' or 'yaml'")
+        # Return the response as formatted JSON
+        return json.dumps(response.json(), indent=2)
         
-        # If save_to_file is provided, save the content to the file
-        if save_to_file:
-            try:
-                with open(save_to_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                return f"OpenAPI specification successfully saved to '{save_to_file}' in {format.upper()} format"
-            except IOError as e:
-                logger.error(f"Error saving file: {e}")
-                return f"Error: Failed to save file '{save_to_file}': {str(e)}"
-        
-        # Otherwise, return the content
-        return content
-            
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error fetching Backstage entity: {e}")
+        return f"Error: HTTP {e.response.status_code} - {e.response.text}"
     except httpx.HTTPError as e:
-        logger.error(f"Error fetching OpenAPI spec: {e}")
-        return f"Error: Failed to fetch OpenAPI specification: {str(e)}"
-    except yaml.YAMLError as e:
-        logger.error(f"Error parsing YAML: {e}")
-        return f"Error: Failed to parse YAML content: {str(e)}"
+        logger.error(f"Error fetching Backstage entity: {e}")
+        return f"Error: Failed to fetch Backstage entity: {str(e)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing JSON response: {e}")
+        return f"Error: Failed to parse JSON response: {str(e)}"
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error fetching Backstage entity: {e}")
         return f"Error: Unexpected error occurred: {str(e)}"
-
-
-
-async def fetch_openapi_spec_raw() -> httpx.Response:
-    """Fetch the raw OpenAPI specification response.
-    
-    Returns:
-        The raw HTTP response from the OpenAPI specification URL
-        
-    Raises:
-        httpx.HTTPError: If the request fails
-    """
-    async with httpx.AsyncClient() as client:
-        response = await client.get(OPENAPI_SPEC_URL)
-        response.raise_for_status()
-        return response
-
-
-async def parse_yaml_to_dict(yaml_content: str) -> Dict[str, Any]:
-    """Parse YAML content to a dictionary.
-    
-    Args:
-        yaml_content: The YAML content as a string
-        
-    Returns:
-        Parsed YAML as a dictionary
-        
-    Raises:
-        yaml.YAMLError: If YAML parsing fails
-    """
-    return yaml.safe_load(yaml_content)
 
 
 # FastAPI endpoints
@@ -141,37 +86,10 @@ def create_api_routes(api: FastAPI):
     async def root():
         """Root endpoint with basic information."""
         return {
-            "message": "Hello World MCP Server with FastAPI",
-            "mcp_server": "hello-world-python",
+            "message": "Backstage MCP Server with FastAPI",
+            "mcp_server": "agentics-mcp",
             "endpoints": {
-                "petstore_yaml": "/petstore.yaml",
-                "petstore_json": "/petstore.json",
                 "docs": "/docs",
                 "redoc": "/redoc"
             }
         }
-
-    @api.get("/petstore.yaml")
-    async def get_petstore_yaml():
-        """Fetch the OpenAPI specification from swagger-petstore repository as YAML."""
-        try:
-            response = await fetch_openapi_spec_raw()
-            return Response(
-                content=response.text,
-                media_type="application/x-yaml",
-                headers={"Content-Disposition": "attachment; filename=openapi.yaml"}
-            )
-        except Exception as e:
-            logger.error(f"Error fetching OpenAPI spec: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to fetch OpenAPI specification: {str(e)}")
-
-    @api.get("/petstore.json")
-    async def get_petstore_json():
-        """Fetch the OpenAPI specification from swagger-petstore repository as JSON."""
-        try:
-            response = await fetch_openapi_spec_raw()
-            parsed_yaml = await parse_yaml_to_dict(response.text)
-            return parsed_yaml
-        except Exception as e:
-            logger.error(f"Error fetching OpenAPI spec: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to fetch OpenAPI specification: {str(e)}")

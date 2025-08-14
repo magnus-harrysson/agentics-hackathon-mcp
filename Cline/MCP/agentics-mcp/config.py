@@ -42,6 +42,11 @@ class Config:
         """Get server port from environment variable or default."""
         return int(os.getenv('SERVER_PORT', '8000'))
     
+    @property
+    def backstage_base_url(self) -> str:
+        """Get Backstage base URL from environment variable or default."""
+        return os.getenv('BACKSTAGE_BASE_URL', 'https://backstage.lgh.foolsec.com')
+    
     def get(self, key: str, default: Any = None) -> Any:
         """Get a configuration value by key."""
         # Check environment variable (uppercase)
