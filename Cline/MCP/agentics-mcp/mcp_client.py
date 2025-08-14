@@ -6,7 +6,7 @@ This module contains all the MCP-related functionality separated from the main s
 
 import logging
 from fastmcp import FastMCP
-from api_client import fetch_backstage_entity
+from api_client import fetch_backstage_api_entity, fetch_backstage_component_relations
 from config import config
 
 logger = logging.getLogger("agentics-mcp.mcp_client")
@@ -26,6 +26,18 @@ async def get_server_config() -> str:
     return json.dumps(config_info, indent=2)
 
 @mcp.tool()
+async def get_backstage_component_relations(component_name: str = "aldente-service") -> str:
+    """Fetch a Backstage catalog component entity and return only its relations.
+    
+    Args:
+        component_name: The name of the component to fetch relations for (default: "aldente-service")
+        
+    Returns:
+        The component relations as JSON string, or error message if failed
+    """
+    return await fetch_backstage_component_relations(component_name)
+
+@mcp.tool()
 async def get_backstage_api_entity(entity_name: str = "aldente-service-api") -> str:
     """Fetch a Backstage catalog API entity by name using GitHub token authentication.
     
@@ -35,7 +47,7 @@ async def get_backstage_api_entity(entity_name: str = "aldente-service-api") -> 
     Returns:
         The API entity information as JSON string, or error message if failed
     """
-    return await fetch_backstage_entity(entity_name)
+    return await fetch_backstage_api_entity(entity_name)
 
 
 async def run_mcp():
