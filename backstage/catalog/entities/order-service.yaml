@@ -8,5 +8,7 @@ spec:
   lifecycle: production
   owner: team-orders
   system: commerce
+  dependsOn:
+    - component:default/payments-service
   consumesApis:
     - api:default/payments-api-v1

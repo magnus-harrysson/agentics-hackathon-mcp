@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payments-service
+  description: Service handling payments
+spec:
+  type: service
+  lifecycle: production
+  owner: team-payments
+  system: commerce
+  providesApis:
+    - api:default/payments-api-v1
+    - api:default/payments-api-v2
