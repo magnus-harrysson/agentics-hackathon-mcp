@@ -838,7 +838,7 @@ def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, t
         "new_features": [],
         "removed_features": [],
         "migration_steps": [],
-        "python_examples": {},
+        "typescript_examples": {},
         "testing_recommendations": [],
         "rollback_strategy": {}
     }
@@ -922,8 +922,8 @@ def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, t
     # Generate migration steps
     analysis["migration_steps"] = generate_migration_steps(from_openapi, to_openapi, analysis)
     
-    # Generate Python code examples
-    analysis["python_examples"] = generate_python_migration_examples(from_openapi, to_openapi, from_api, to_api)
+    # Generate TypeScript code examples
+    analysis["typescript_examples"] = generate_typescript_migration_examples(from_openapi, to_openapi, from_api, to_api)
     
     # Generate testing recommendations
     analysis["testing_recommendations"] = generate_testing_recommendations(analysis)
@@ -1046,8 +1046,8 @@ def generate_migration_steps(from_openapi: dict, to_openapi: dict, analysis: dic
     return steps
 
 
-def generate_python_migration_examples(from_openapi: dict, to_openapi: dict, from_api: str, to_api: str) -> dict:
-    """Generate Python code examples for the migration."""
+def generate_typescript_migration_examples(from_openapi: dict, to_openapi: dict, from_api: str, to_api: str) -> dict:
+    """Generate TypeScript code examples for the migration."""
     examples = {}
     
     from_info = from_openapi.get("info", {})
@@ -1059,108 +1059,131 @@ def generate_python_migration_examples(from_openapi: dict, to_openapi: dict, fro
     # Generate basic client setup example
     examples["client_setup"] = {
         "description": "Update your API client configuration",
-        "before": f'''import requests
+        "before": f'''// Old API client setup
+interface PaymentRequestV1 {{
+  amountCents: number;
+  currency: string;
+}}
 
-# Old API client setup
-class {from_api.replace("-", "_").title()}Client:
-    def __init__(self):
-        self.base_url = "http://localhost:4010"  # Old API URL
-        self.session = requests.Session()
-        
-    def create_payment(self, amount_cents, currency):
-        response = self.session.post(
-            f"{{self.base_url}}/payments",
-            json={{
-                "amountCents": amount_cents,
-                "currency": currency
-            }}
-        )
-        return response.json()''',
-        "after": f'''import requests
-import uuid
+interface PaymentResponseV1 {{
+  id: string;
+  status: string;
+  amountCents: number;
+  currency: string;
+}}
 
-# New API client setup
-class {to_api.replace("-", "_").title()}Client:
-    def __init__(self):
-        self.base_url = "http://localhost:4011"  # New API URL
-        self.session = requests.Session()
-        
-    def create_payment(self, amount, currency):
-        response = self.session.post(
-            f"{{self.base_url}}/v2/payments",
-            headers={{
-                "Idempotency-Key": str(uuid.uuid4())  # Required for v2
-            }},
-            json={{
-                "amount": amount,  # Now decimal format
-                "currency": currency
-            }}
-        )
-        return response.json()'''
+class {from_api.replace("-", "_").title()}Client {{
+  private baseUrl = "http://localhost:4010";
+
+  async createPayment(request: PaymentRequestV1): Promise<PaymentResponseV1> {{
+    const response = await fetch(`${{this.baseUrl}}/payments`, {{
+      method: 'POST',
+      headers: {{
+        'Content-Type': 'application/json',
+      }},
+      body: JSON.stringify(request),
+    }});
+    return response.json();
+  }}
+}}''',
+        "after": f'''// New API client setup
+import {{ v4 as uuidv4 }} from 'uuid';
+
+interface PaymentRequestV2 {{
+  amount: number;
+  currency: string;
+}}
+
+interface PaymentResponseV2 {{
+  paymentId: string;
+  state: string;
+  amount: number;
+  currency: string;
+}}
+
+class {to_api.replace("-", "_").title()}Client {{
+  private baseUrl = "http://localhost:4011";
+
+  async createPayment(request: PaymentRequestV2): Promise<PaymentResponseV2> {{
+    const response = await fetch(`${{this.baseUrl}}/v2/payments`, {{
+      method: 'POST',
+      headers: {{
+        'Content-Type': 'application/json',
+        'Idempotency-Key': uuidv4(), // Required for v2
+      }},
+      body: JSON.stringify(request),
+    }});
+    return response.json();
+  }}
+}}'''
     }
     
     # Generate specific endpoint migration examples
     if "/payments" in from_paths and "/v2/payments" in to_paths:
         examples["create_payment"] = {
             "description": "Migrate payment creation from v1 to v2",
-            "before": '''# V1 API - Create payment with cents
-response = client.create_payment(
-    amount_cents=1299,  # $12.99 in cents
-    currency="USD"
-)
+            "before": '''// V1 API - Create payment with cents
+const response = await client.createPayment({
+  amountCents: 1299, // $12.99 in cents
+  currency: "USD"
+});
 
-# V1 Response format
-payment_id = response["id"]
-status = response["status"]
-amount_cents = response["amountCents"]''',
-            "after": '''# V2 API - Create payment with decimal amount
-response = client.create_payment(
-    amount=12.99,  # Direct decimal amount
-    currency="USD"
-)
+// V1 Response format
+const paymentId = response.id;
+const status = response.status;
+const amountCents = response.amountCents;''',
+            "after": '''// V2 API - Create payment with decimal amount
+const response = await client.createPayment({
+  amount: 12.99, // Direct decimal amount
+  currency: "USD"
+});
 
-# V2 Response format (field names changed)
-payment_id = response["paymentId"]  # Changed from "id"
-state = response["state"]  # Changed from "status"
-amount = response["amount"]  # Now decimal format'''
+// V2 Response format (field names changed)
+const paymentId = response.paymentId; // Changed from "id"
+const state = response.state; // Changed from "status"
+const amount = response.amount; // Now decimal format'''
         }
         
         examples["get_payment"] = {
             "description": "Migrate payment retrieval from v1 to v2",
-            "before": '''# V1 API - Get payment
-response = requests.get(f"http://localhost:4010/payments/{payment_id}")
-payment = response.json()
+            "before": '''// V1 API - Get payment
+const response = await fetch(`http://localhost:4010/payments/${{paymentId}}`);
+const payment = await response.json();
 
-# V1 field access
-payment_status = payment["status"]
-amount_in_cents = payment["amountCents"]
-amount_in_dollars = amount_in_cents / 100  # Manual conversion''',
-            "after": '''# V2 API - Get payment
-response = requests.get(f"http://localhost:4011/v2/payments/{payment_id}")
-payment = response.json()
+// V1 field access
+const paymentStatus = payment.status;
+const amountInCents = payment.amountCents;
+const amountInDollars = amountInCents / 100; // Manual conversion''',
+            "after": '''// V2 API - Get payment
+const response = await fetch(`http://localhost:4011/v2/payments/${{paymentId}}`);
+const payment = await response.json();
 
-# V2 field access (updated field names)
-payment_state = payment["state"]  # Changed from "status"
-amount = payment["amount"]  # Already in decimal format'''
+// V2 field access (updated field names)
+const paymentState = payment.state; // Changed from "status"
+const amount = payment.amount; // Already in decimal format'''
         }
     
     # Generate error handling example
     examples["error_handling"] = {
         "description": "Update error handling for the new API version",
-        "before": '''# V1 Error handling
-try:
-    response = client.create_payment(1299, "USD")
-    if response.get("status") == "failed":
-        print(f"Payment failed: {response.get('id')}")
-except requests.exceptions.RequestException as e:
-    print(f"API error: {e}")''',
-        "after": '''# V2 Error handling (updated field names and states)
-try:
-    response = client.create_payment(12.99, "USD")
-    if response.get("state") == "failed":  # Changed from "status"
-        print(f"Payment failed: {response.get('paymentId')}")  # Changed from "id"
-except requests.exceptions.RequestException as e:
-    print(f"API error: {e}")'''
+        "before": '''// V1 Error handling
+try {
+  const response = await client.createPayment({ amountCents: 1299, currency: "USD" });
+  if (response.status === "failed") {
+    console.log(`Payment failed: ${{response.id}}`);
+  }
+} catch (error) {
+  console.error(`API error: ${{error}}`);
+}''',
+        "after": '''// V2 Error handling (updated field names and states)
+try {
+  const response = await client.createPayment({ amount: 12.99, currency: "USD" });
+  if (response.state === "failed") { // Changed from "status"
+    console.log(`Payment failed: ${{response.paymentId}}`); // Changed from "id"
+  }
+} catch (error) {
+  console.error(`API error: ${{error}}`);
+}'''
     }
     
     return examples
@@ -1246,7 +1269,7 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
         f"**Estimated Effort:** {migration_analysis['estimated_effort']}",
         f"**Breaking Changes:** {len(migration_analysis['breaking_changes'])}",
         "",
-        "## 📋 Migration Summary",
+        "## Migration Summary",
         "",
         f"This guide provides step-by-step instructions for migrating from `{from_api}` to `{to_api}`.",
         "",
@@ -1255,17 +1278,17 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
         f"- **Provider Service:** `{provider_service}`",
         f"- **Affected Consumers:** {', '.join([f'`{c}`' for c in consumers]) if consumers else 'None'}",
         "",
-        "### ✅ Validation Status",
+        "### Validation Status",
         "",
-        "- ✅ **Backstage Relations Verified:** Both APIs have proper `apiProvidedBy` relations",
-        f"- ✅ **Same Provider Confirmed:** Both APIs are provided by `{provider_service}`",
-        "- ✅ **Migration Path Valid:** This is a safe migration between API versions",
+        "- **Backstage Relations Verified:** Both APIs have proper `apiProvidedBy` relations",
+        f"- **Same Provider Confirmed:** Both APIs are provided by `{provider_service}`",
+        "- **Migration Path Valid:** This is a safe migration between API versions",
         "",
     ]
     
     # Add API comparison section
     markdown_lines.extend([
-        "## 🔄 API Comparison",
+        "## API Comparison",
         "",
         "| Aspect | Source API | Target API |",
         "|--------|------------|------------|",
@@ -1279,25 +1302,24 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
     # Add breaking changes section
     if migration_analysis["breaking_changes"]:
         markdown_lines.extend([
-            "## ⚠️ Breaking Changes",
+            "## Breaking Changes",
             "",
             "The following breaking changes require code updates:",
             "",
         ])
         
         for i, change in enumerate(migration_analysis["breaking_changes"], 1):
-            impact_emoji = "🔴" if change["impact"] == "high" else "🟡" if change["impact"] == "medium" else "🟢"
             markdown_lines.extend([
                 f"### {i}. {change['description']}",
                 "",
                 f"- **Type:** {change['type'].replace('_', ' ').title()}",
-                f"- **Impact:** {impact_emoji} {change['impact'].title()}",
+                f"- **Impact:** {change['impact'].title()}",
                 f"- **Endpoint:** `{change.get('endpoint', 'N/A')}`",
                 "",
             ])
     else:
         markdown_lines.extend([
-            "## ✅ No Breaking Changes",
+            "## No Breaking Changes",
             "",
             "This migration has no breaking changes and should be straightforward to implement.",
             "",
@@ -1306,7 +1328,7 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
     # Add new features section
     if migration_analysis["new_features"]:
         markdown_lines.extend([
-            "## 🆕 New Features",
+            "## New Features",
             "",
             "The target API introduces the following new features:",
             "",
@@ -1320,20 +1342,20 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
     # Add removed features section
     if migration_analysis["removed_features"]:
         markdown_lines.extend([
-            "## 🗑️ Removed Features",
+            "## Removed Features",
             "",
-            "⚠️ **The following features have been removed and are no longer available:**",
+            "The following features have been removed and are no longer available:",
             "",
         ])
         
         for feature in migration_analysis["removed_features"]:
-            markdown_lines.append(f"- ❌ {feature}")
+            markdown_lines.append(f"- {feature}")
         
         markdown_lines.append("")
     
     # Add migration steps
     markdown_lines.extend([
-        "## 📝 Migration Steps",
+        "## Migration Steps",
         "",
         "Follow these steps to complete the migration:",
         "",
@@ -1350,15 +1372,15 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
             "",
         ])
     
-    # Add Python code examples
+    # Add TypeScript code examples
     markdown_lines.extend([
-        "## 🐍 Python Code Examples",
+        "## TypeScript Code Examples",
         "",
         "Here are specific code examples to help with the migration:",
         "",
     ])
     
-    for example_name, example_data in migration_analysis["python_examples"].items():
+    for example_name, example_data in migration_analysis["typescript_examples"].items():
         markdown_lines.extend([
             f"### {example_name.replace('_', ' ').title()}",
             "",
@@ -1366,106 +1388,17 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
             "",
             "#### Before (Old API):",
             "",
-            "```python",
+            "```typescript",
             example_data["before"],
             "```",
             "",
             "#### After (New API):",
             "",
-            "```python",
+            "```typescript",
             example_data["after"],
             "```",
             "",
         ])
-    
-    # Add testing recommendations
-    markdown_lines.extend([
-        "## 🧪 Testing Recommendations",
-        "",
-        "Comprehensive testing is crucial for a successful migration:",
-        "",
-    ])
-    
-    for recommendation in migration_analysis["testing_recommendations"]:
-        markdown_lines.extend([
-            f"### {recommendation['category']}",
-            "",
-            f"**{recommendation['description']}**",
-            "",
-        ])
-        
-        for test in recommendation["tests"]:
-            markdown_lines.append(f"- [ ] {test}")
-        
-        markdown_lines.append("")
-    
-    # Add rollback strategy
-    rollback = migration_analysis["rollback_strategy"]
-    markdown_lines.extend([
-        "## 🔄 Rollback Strategy",
-        "",
-        "Be prepared to rollback if issues arise during or after migration.",
-        "",
-        "### Preparation",
-        "",
-    ])
-    
-    for prep in rollback["preparation"]:
-        markdown_lines.append(f"- [ ] {prep}")
-    
-    markdown_lines.extend([
-        "",
-        "### Rollback Triggers",
-        "",
-        "Consider rolling back if you encounter:",
-        "",
-    ])
-    
-    for trigger in rollback["rollback_triggers"]:
-        markdown_lines.append(f"- 🚨 {trigger}")
-    
-    markdown_lines.extend([
-        "",
-        "### Rollback Steps",
-        "",
-        "If rollback is necessary, follow these steps:",
-        "",
-    ])
-    
-    for step in rollback["rollback_steps"]:
-        markdown_lines.extend([
-            f"**{step['step']}. {step['action']}**",
-            "",
-            f"```bash",
-            f"{step['command']}",
-            f"```",
-            "",
-        ])
-    
-    markdown_lines.extend([
-        "### Monitoring",
-        "",
-        "Set up monitoring for:",
-        "",
-    ])
-    
-    for monitor in rollback["monitoring"]:
-        markdown_lines.append(f"- 📊 {monitor}")
-    
-    markdown_lines.extend([
-        "",
-        "## 🎯 Next Steps",
-        "",
-        f"1. **Review this migration guide** thoroughly with your team",
-        f"2. **Coordinate with `{provider_service}` team** (API provider) for any questions",
-        f"3. **Plan the migration** during a maintenance window",
-        f"4. **Test extensively** in staging environment first",
-        f"5. **Monitor closely** after production deployment",
-        "",
-        "---",
-        "",
-        f"*This migration guide was automatically generated by analyzing the Backstage catalog and OpenAPI specifications. For questions about the migration process, contact the system architects or the `{provider_service}` team.*",
-    ])
     
     return "\n".join(markdown_lines)
 
