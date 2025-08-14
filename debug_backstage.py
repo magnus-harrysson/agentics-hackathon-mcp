@@ -82,13 +82,28 @@ async def main():
     try:
         from mcp_client import generate_mermaid_for_component
         
-        # Test the mermaid generation directly for aldente-service
-        mermaid_result = await generate_mermaid_for_component("aldente-service")
-        print("Mermaid Diagram for aldente-service:")
+        # Test the mermaid generation directly for aldente-frontend
+        mermaid_result = await generate_mermaid_for_component("aldente-frontend")
+        print("Mermaid Diagram for aldente-frontend:")
         print(mermaid_result)
         print()
     except Exception as e:
         print(f"Error testing mermaid generation: {e}")
+        import traceback
+        traceback.print_exc()
+        print()
+
+    print("6. Testing new Systems Overview Mermaid tool...")
+    try:
+        from mcp_client import generate_systems_overview_mermaid_direct
+        
+        # Test the systems overview mermaid generation
+        systems_mermaid_result = await generate_systems_overview_mermaid_direct()
+        print("Systems Overview Mermaid Diagram:")
+        print(systems_mermaid_result)
+        print()
+    except Exception as e:
+        print(f"Error testing systems overview mermaid generation: {e}")
         import traceback
         traceback.print_exc()
         print()
