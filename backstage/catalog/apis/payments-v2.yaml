@@ -3,6 +3,9 @@ info:
   title: Payments API
   version: 2.0.0
   description: API for creating and retrieving payments (v2 - current). Introduces idempotency and decimal amounts.
+servers:
+  - url: http://localhost:4011
+    description: Local development server
 paths:
   /v2/payments:
     post:
