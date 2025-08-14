@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: API
 metadata:
-  name: payments-api
+  name: payments-api-v2
   description: Payments domain API (v2 - current)
   annotations:
     backstage.io/owner: team-payments
