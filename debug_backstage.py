@@ -134,5 +134,20 @@ async def main():
         traceback.print_exc()
         print()
 
+    print("8. Testing NEW API Migration Plan tool...")
+    try:
+        from mermaid_generator import generate_api_migration_plan_internal
+        
+        # Test the migration plan generation for payments API v1 -> v2
+        migration_result = await generate_api_migration_plan_internal("payments-api-v1", "payments-api-v2")
+        print("API Migration Plan (payments-api-v1 -> payments-api-v2):")
+        print(migration_result)
+        print()
+    except Exception as e:
+        print(f"Error testing API migration plan generation: {e}")
+        import traceback
+        traceback.print_exc()
+        print()
+
 if __name__ == "__main__":
     asyncio.run(main())

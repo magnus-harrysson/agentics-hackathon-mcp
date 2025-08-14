@@ -183,6 +183,35 @@ async def list_deprecated_entities(base_url: str = "") -> str:
         import json
         return json.dumps({"error": "MCP tool error", "message": f"Tool execution failed: {str(e)}"}, indent=2)
 
+@mcp.tool()
+async def generate_api_migration_plan(from_api: str, to_api: str, base_url: str = "") -> str:
+    """Generate a detailed migration plan from one API version to another with Python code examples.
+    
+    This tool analyzes both API specifications, validates that proper relations exist in Backstage,
+    and provides comprehensive migration guidance including code snippets and breaking changes.
+    
+    Args:
+        from_api: The name of the source API to migrate from (e.g., "payments-api-v1")
+        to_api: The name of the target API to migrate to (e.g., "payments-api-v2")
+        base_url: Optional base URL override for Backstage API (if empty, uses configured default)
+        
+    Returns:
+        Detailed migration plan with Python code examples as JSON string, or error message if failed
+    """
+    try:
+        logger.info(f"MCP tool generate_api_migration_plan called: {from_api} -> {to_api}")
+        
+        # Import the migration generator function
+        from mermaid_generator import generate_api_migration_plan_internal
+        
+        result = await generate_api_migration_plan_internal(from_api, to_api, base_url)
+        logger.info(f"MCP tool generate_api_migration_plan completed successfully: {from_api} -> {to_api}")
+        return result
+    except Exception as e:
+        logger.error(f"MCP tool generate_api_migration_plan failed: {e}", exc_info=True)
+        import json
+        return json.dumps({"error": "MCP tool error", "message": f"Tool execution failed: {str(e)}", "from_api": from_api, "to_api": to_api}, indent=2)
+
 # Direct functions for testing
 async def generate_systems_overview_mermaid_direct() -> str:
     """Generate a systems overview Mermaid diagram - direct function for testing."""
