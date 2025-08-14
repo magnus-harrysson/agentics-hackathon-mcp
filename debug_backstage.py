@@ -82,9 +82,9 @@ async def main():
     try:
         from mcp_client import generate_mermaid_for_component
         
-        # Test the mermaid generation directly
-        mermaid_result = await generate_mermaid_for_component("order-service")
-        print("Mermaid Diagram for order-service:")
+        # Test the mermaid generation directly for aldente-service
+        mermaid_result = await generate_mermaid_for_component("aldente-service")
+        print("Mermaid Diagram for aldente-service:")
         print(mermaid_result)
         print()
     except Exception as e:

@@ -251,7 +251,7 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
             
             # Use provided base URL or fall back to config
             api_base_url = base_url or config.backstage_base_url
-            url = f"{api_base_url}/api/catalog/entities/by-query?filter=kind=component&fields=spec.system"
+            url = f"{api_base_url}/api/catalog/entities/by-query?filter=kind=component&fields=metadata.name,spec.system,spec.owner"
             
             # Set up headers with Bearer token
             headers = {
@@ -283,16 +283,35 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
             # Get the response data
             response_data = response.json()
             
-            # Extract unique systems from the components
-            systems = set()
+            # Extract unique systems from the components and collect owner information
+            systems = {}
             for item in response_data.get('items', []):
                 spec = item.get('spec', {})
                 system = spec.get('system')
+                owner = spec.get('owner', '')
                 if system:
-                    systems.add(system)
+                    if system not in systems:
+                        systems[system] = {
+                            "name": system,
+                            "components": [],
+                            "owners": set()
+                        }
+                    
+                    component_name = item.get('metadata', {}).get('name', 'Unknown')
+                    systems[system]["components"].append(component_name)
+                    if owner:
+                        systems[system]["owners"].add(owner)
             
-            # Convert to sorted list and return as JSON
-            systems_list = sorted(list(systems))
+            # Convert to final format
+            systems_list = []
+            for system_name, system_data in sorted(systems.items()):
+                systems_list.append({
+                    "name": system_name,
+                    "component_count": len(system_data["components"]),
+                    "components": sorted(system_data["components"]),
+                    "owners": sorted(list(system_data["owners"]))
+                })
+            
             result = {
                 "systems": systems_list,
                 "total_systems": len(systems_list),
