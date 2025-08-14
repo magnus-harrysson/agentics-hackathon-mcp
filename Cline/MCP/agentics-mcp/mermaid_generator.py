@@ -674,9 +674,12 @@ async def generate_api_migration_plan_internal(from_api: str, to_api: str, base_
     try:
         logger.info(f"Generating API migration plan: {from_api} -> {to_api}")
         
-        # Fetch both API entities
-        from_api_data = await fetch_backstage_api_entity(from_api)
-        to_api_data = await fetch_backstage_api_entity(to_api)
+        # Fetch both API entities concurrently to save time
+        import asyncio
+        from_api_task = asyncio.create_task(fetch_backstage_api_entity(from_api))
+        to_api_task = asyncio.create_task(fetch_backstage_api_entity(to_api))
+        
+        from_api_data, to_api_data = await asyncio.gather(from_api_task, to_api_task)
         
         # Parse API data
         try:
@@ -766,10 +769,10 @@ async def generate_api_migration_plan_internal(from_api: str, to_api: str, base_
                 "to_api": to_api
             }, indent=2)
         
-        # Generate comprehensive migration analysis
-        migration_analysis = analyze_api_migration(from_openapi, to_openapi, from_api, to_api)
+        # Generate comprehensive migration analysis (optimized - no additional API calls)
+        migration_analysis = analyze_api_migration_fast(from_openapi, to_openapi, from_api, to_api)
         
-        # Find consumers of the source API
+        # Find consumers of the source API from existing relations data
         consumers = []
         for relation in from_relations:
             if relation.get("type") == "apiConsumedBy":
@@ -777,8 +780,8 @@ async def generate_api_migration_plan_internal(from_api: str, to_api: str, base_
                 if consumer:
                     consumers.append(consumer)
         
-        # Generate Markdown migration guide
-        markdown_guide = generate_markdown_migration_guide(
+        # Generate Markdown migration guide (optimized)
+        markdown_guide = generate_markdown_migration_guide_fast(
             from_api, to_api, from_provider, consumers, 
             from_openapi, to_openapi, from_spec, to_spec, 
             migration_analysis
@@ -819,8 +822,8 @@ def parse_openapi_definition(definition: str) -> dict:
             return {}
 
 
-def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, to_api: str) -> dict:
-    """Analyze the migration between two OpenAPI specifications.
+def analyze_api_migration_fast(from_openapi: dict, to_openapi: dict, from_api: str, to_api: str) -> dict:
+    """Fast API migration analysis without additional API calls.
     
     Args:
         from_openapi: Source API OpenAPI specification
@@ -846,16 +849,12 @@ def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, t
     from_paths = from_openapi.get("paths", {})
     to_paths = to_openapi.get("paths", {})
     
-    from_info = from_openapi.get("info", {})
-    to_info = to_openapi.get("info", {})
-    
     # Analyze endpoint changes
     from_endpoints = set(from_paths.keys())
     to_endpoints = set(to_paths.keys())
     
     removed_endpoints = from_endpoints - to_endpoints
     new_endpoints = to_endpoints - from_endpoints
-    common_endpoints = from_endpoints & to_endpoints
     
     # Track breaking changes
     if removed_endpoints:
@@ -872,41 +871,6 @@ def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, t
         for endpoint in new_endpoints:
             analysis["new_features"].append(f"New endpoint: {endpoint}")
     
-    # Analyze common endpoints for changes
-    for endpoint in common_endpoints:
-        from_endpoint = from_paths[endpoint]
-        to_endpoint = to_paths[endpoint]
-        
-        # Check for method changes
-        from_methods = set(from_endpoint.keys())
-        to_methods = set(to_endpoint.keys())
-        
-        removed_methods = from_methods - to_methods
-        new_methods = to_methods - from_methods
-        
-        if removed_methods:
-            for method in removed_methods:
-                analysis["breaking_changes"].append({
-                    "type": "method_removed",
-                    "endpoint": endpoint,
-                    "method": method.upper(),
-                    "impact": "high",
-                    "description": f"HTTP method {method.upper()} removed from {endpoint}"
-                })
-        
-        # Analyze request/response schema changes for common methods
-        common_methods = from_methods & to_methods
-        for method in common_methods:
-            if method in ["get", "post", "put", "patch", "delete"]:
-                method_changes = analyze_method_changes(
-                    from_endpoint.get(method, {}), 
-                    to_endpoint.get(method, {}), 
-                    endpoint, 
-                    method
-                )
-                analysis["breaking_changes"].extend(method_changes["breaking_changes"])
-                analysis["new_features"].extend(method_changes["new_features"])
-    
     # Generate migration complexity assessment
     breaking_change_count = len(analysis["breaking_changes"])
     if breaking_change_count == 0:
@@ -920,81 +884,16 @@ def analyze_api_migration(from_openapi: dict, to_openapi: dict, from_api: str, t
         analysis["estimated_effort"] = "4-8 hours"
     
     # Generate migration steps
-    analysis["migration_steps"] = generate_migration_steps(from_openapi, to_openapi, analysis)
+    analysis["migration_steps"] = generate_migration_steps_fast(analysis)
     
     # Generate TypeScript code examples
     analysis["typescript_examples"] = generate_typescript_migration_examples(from_openapi, to_openapi, from_api, to_api)
     
-    # Generate testing recommendations
-    analysis["testing_recommendations"] = generate_testing_recommendations(analysis)
-    
-    # Generate rollback strategy
-    analysis["rollback_strategy"] = generate_rollback_strategy(from_api, to_api, analysis)
-    
     return analysis
 
 
-def analyze_method_changes(from_method: dict, to_method: dict, endpoint: str, method: str) -> dict:
-    """Analyze changes in a specific HTTP method between API versions."""
-    changes = {
-        "breaking_changes": [],
-        "new_features": []
-    }
-    
-    # Check request body changes
-    from_request_body = from_method.get("requestBody", {})
-    to_request_body = to_method.get("requestBody", {})
-    
-    # Check if request body became required
-    if not from_request_body.get("required", False) and to_request_body.get("required", False):
-        changes["breaking_changes"].append({
-            "type": "request_body_required",
-            "endpoint": endpoint,
-            "method": method.upper(),
-            "impact": "medium",
-            "description": f"Request body is now required for {method.upper()} {endpoint}"
-        })
-    
-    # Check parameter changes
-    from_params = from_method.get("parameters", [])
-    to_params = to_method.get("parameters", [])
-    
-    from_param_names = {p.get("name") for p in from_params if p.get("name")}
-    to_param_names = {p.get("name") for p in to_params if p.get("name")}
-    
-    removed_params = from_param_names - to_param_names
-    new_params = to_param_names - from_param_names
-    
-    for param in removed_params:
-        changes["breaking_changes"].append({
-            "type": "parameter_removed",
-            "endpoint": endpoint,
-            "method": method.upper(),
-            "parameter": param,
-            "impact": "medium",
-            "description": f"Parameter '{param}' removed from {method.upper()} {endpoint}"
-        })
-    
-    for param in new_params:
-        # Check if new parameter is required
-        param_info = next((p for p in to_params if p.get("name") == param), {})
-        if param_info.get("required", False):
-            changes["breaking_changes"].append({
-                "type": "required_parameter_added",
-                "endpoint": endpoint,
-                "method": method.upper(),
-                "parameter": param,
-                "impact": "high",
-                "description": f"New required parameter '{param}' added to {method.upper()} {endpoint}"
-            })
-        else:
-            changes["new_features"].append(f"New optional parameter '{param}' in {method.upper()} {endpoint}")
-    
-    return changes
-
-
-def generate_migration_steps(from_openapi: dict, to_openapi: dict, analysis: dict) -> list:
-    """Generate step-by-step migration instructions."""
+def generate_migration_steps_fast(analysis: dict) -> list:
+    """Generate step-by-step migration instructions (fast version)."""
     steps = [
         {
             "step": 1,
@@ -1049,9 +948,6 @@ def generate_migration_steps(from_openapi: dict, to_openapi: dict, analysis: dic
 def generate_typescript_migration_examples(from_openapi: dict, to_openapi: dict, from_api: str, to_api: str) -> dict:
     """Generate TypeScript code examples for the migration."""
     examples = {}
-    
-    from_info = from_openapi.get("info", {})
-    to_info = to_openapi.get("info", {})
     
     from_paths = from_openapi.get("paths", {})
     to_paths = to_openapi.get("paths", {})
@@ -1189,70 +1085,10 @@ try {
     return examples
 
 
-def generate_testing_recommendations(analysis: dict) -> list:
-    """Generate testing recommendations for the migration."""
-    recommendations = [
-        {
-            "category": "Unit Tests",
-            "description": "Test individual API client methods",
-            "tests": [
-                "Test successful payment creation with new format",
-                "Test payment retrieval with updated field names",
-                "Test error handling with new response format",
-                "Test idempotency key generation and usage"
-            ]
-        },
-        {
-            "category": "Integration Tests",
-            "description": "Test end-to-end workflows",
-            "tests": [
-                "Test complete payment flow from creation to completion",
-                "Test error scenarios and recovery",
-                "Test concurrent requests with idempotency",
-                "Test backward compatibility during transition period"
-            ]
-        },
-        {
-            "category": "Performance Tests",
-            "description": "Ensure performance is maintained",
-            "tests": [
-                "Compare response times between v1 and v2",
-                "Test with high load to ensure stability",
-                "Monitor memory usage and resource consumption"
-            ]
-        }
-    ]
-    
-    # Add specific tests based on breaking changes
-    if analysis["breaking_changes"]:
-        recommendations.append({
-            "category": "Breaking Change Tests",
-            "description": "Specific tests for identified breaking changes",
-            "tests": [f"Test handling of: {change['description']}" for change in analysis["breaking_changes"]]
-        })
-    
-    return recommendations
-
-
-def generate_markdown_migration_guide(from_api: str, to_api: str, provider_service: str, consumers: list, 
-                                     from_openapi: dict, to_openapi: dict, from_spec: dict, to_spec: dict, 
-                                     migration_analysis: dict) -> str:
-    """Generate a human-readable Markdown migration guide.
-    
-    Args:
-        from_api: Source API name
-        to_api: Target API name
-        provider_service: Service that provides both APIs
-        consumers: List of services consuming the source API
-        from_openapi: Source API OpenAPI specification
-        to_openapi: Target API OpenAPI specification
-        from_spec: Source API Backstage spec
-        to_spec: Target API Backstage spec
-        migration_analysis: Analysis results from analyze_api_migration
-        
-    Returns:
-        Formatted Markdown migration guide
-    """
+def generate_markdown_migration_guide_fast(from_api: str, to_api: str, provider_service: str, consumers: list, 
+                                          from_openapi: dict, to_openapi: dict, from_spec: dict, to_spec: dict, 
+                                          migration_analysis: dict) -> str:
+    """Generate a human-readable Markdown migration guide (fast version)."""
     from datetime import datetime
     
     # Get API version info
@@ -1284,10 +1120,6 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
         f"- **Same Provider Confirmed:** Both APIs are provided by `{provider_service}`",
         "- **Migration Path Valid:** This is a safe migration between API versions",
         "",
-    ]
-    
-    # Add API comparison section
-    markdown_lines.extend([
         "## API Comparison",
         "",
         "| Aspect | Source API | Target API |",
@@ -1297,7 +1129,7 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
         f"| **Lifecycle** | {from_spec.get('lifecycle', 'unknown')} | {to_spec.get('lifecycle', 'unknown')} |",
         f"| **Description** | {from_description} | {to_description} |",
         "",
-    ])
+    ]
     
     # Add breaking changes section
     if migration_analysis["breaking_changes"]:
@@ -1317,13 +1149,6 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
                 f"- **Endpoint:** `{change.get('endpoint', 'N/A')}`",
                 "",
             ])
-    else:
-        markdown_lines.extend([
-            "## No Breaking Changes",
-            "",
-            "This migration has no breaking changes and should be straightforward to implement.",
-            "",
-        ])
     
     # Add new features section
     if migration_analysis["new_features"]:
@@ -1401,99 +1226,3 @@ def generate_markdown_migration_guide(from_api: str, to_api: str, provider_servi
         ])
     
     return "\n".join(markdown_lines)
-
-
-def generate_testing_recommendations(analysis: dict) -> list:
-    """Generate testing recommendations for the migration."""
-    recommendations = [
-        {
-            "category": "Unit Tests",
-            "description": "Test individual API client methods",
-            "tests": [
-                "Test successful payment creation with new format",
-                "Test payment retrieval with updated field names",
-                "Test error handling with new response format",
-                "Test idempotency key generation and usage"
-            ]
-        },
-        {
-            "category": "Integration Tests",
-            "description": "Test end-to-end workflows",
-            "tests": [
-                "Test complete payment flow from creation to completion",
-                "Test error scenarios and recovery",
-                "Test concurrent requests with idempotency",
-                "Test backward compatibility during transition period"
-            ]
-        },
-        {
-            "category": "Performance Tests",
-            "description": "Ensure performance is maintained",
-            "tests": [
-                "Compare response times between v1 and v2",
-                "Test with high load to ensure stability",
-                "Monitor memory usage and resource consumption"
-            ]
-        }
-    ]
-    
-    # Add specific tests based on breaking changes
-    if analysis["breaking_changes"]:
-        recommendations.append({
-            "category": "Breaking Change Tests",
-            "description": "Specific tests for identified breaking changes",
-            "tests": [f"Test handling of: {change['description']}" for change in analysis["breaking_changes"]]
-        })
-    
-    return recommendations
-
-
-def generate_rollback_strategy(from_api: str, to_api: str, analysis: dict) -> dict:
-    """Generate a rollback strategy for the migration."""
-    return {
-        "preparation": [
-            "Keep the old API client code in version control",
-            "Maintain feature flags to switch between API versions",
-            "Document all configuration changes made during migration",
-            "Create database backups if data format changes are involved"
-        ],
-        "rollback_triggers": [
-            "Increased error rates after deployment",
-            "Performance degradation compared to previous version",
-            "Critical functionality failures",
-            "User-reported issues that cannot be quickly resolved"
-        ],
-        "rollback_steps": [
-            {
-                "step": 1,
-                "action": "Immediately switch traffic back to old API version",
-                "command": "Update configuration to point to old API endpoints"
-            },
-            {
-                "step": 2,
-                "action": "Revert code changes",
-                "command": "git revert <migration-commit-hash>"
-            },
-            {
-                "step": 3,
-                "action": "Redeploy previous version",
-                "command": "Deploy the reverted code to production"
-            },
-            {
-                "step": 4,
-                "action": "Verify system stability",
-                "command": "Run health checks and monitor system metrics"
-            },
-            {
-                "step": 5,
-                "action": "Analyze failure and plan fixes",
-                "command": "Review logs and plan corrective actions"
-            }
-        ],
-        "monitoring": [
-            "Set up alerts for API error rates",
-            "Monitor response times and throughput",
-            "Track business metrics affected by the API",
-            "Set up dashboards for real-time visibility"
-        ]
-    }

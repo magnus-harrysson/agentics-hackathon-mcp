@@ -27,9 +27,9 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", f
     import asyncio
     import random
     
-    # Retry configuration
-    max_retries = 5
-    base_delay = 1.0  # seconds
+    # Retry configuration - optimized for 10s MCP timeout
+    max_retries = 3
+    base_delay = 0.5  # seconds
     
     for attempt in range(max_retries):
         try:
@@ -143,9 +143,9 @@ async def fetch_backstage_component_relations(component_name: str = "aldente-ser
     import asyncio
     import random
     
-    # Retry configuration
-    max_retries = 5
-    base_delay = 1.0  # seconds
+    # Retry configuration - optimized for 10s MCP timeout
+    max_retries = 3
+    base_delay = 0.5  # seconds
     
     for attempt in range(max_retries):
         try:
@@ -238,9 +238,9 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
     import asyncio
     import random
     
-    # Retry configuration
-    max_retries = 5
-    base_delay = 1.0  # seconds
+    # Retry configuration - optimized for 10s MCP timeout
+    max_retries = 3
+    base_delay = 0.5  # seconds
     
     for attempt in range(max_retries):
         try:
@@ -370,9 +370,9 @@ async def fetch_deprecated_entities(base_url: str = None) -> str:
     import asyncio
     import random
     
-    # Retry configuration
-    max_retries = 5
-    base_delay = 1.0  # seconds
+    # Retry configuration - optimized for 10s MCP timeout
+    max_retries = 3
+    base_delay = 0.5  # seconds
     
     for attempt in range(max_retries):
         try:
@@ -485,9 +485,9 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
     import asyncio
     import random
     
-    # Retry configuration
-    max_retries = 5
-    base_delay = 1.0  # seconds
+    # Retry configuration - optimized for 10s MCP timeout
+    max_retries = 3
+    base_delay = 0.5  # seconds
     
     for attempt in range(max_retries):
         try:

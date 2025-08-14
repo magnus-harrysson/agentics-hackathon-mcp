@@ -14,7 +14,7 @@ from api_client import (
     fetch_deprecated_entities
 )
 from config import config
-from mermaid_generator import generate_component_dependency_diagram, generate_systems_overview_diagram, generate_single_system_diagram
+from mermaid import generate_component_dependency_diagram, generate_systems_overview_diagram, generate_single_system_diagram
 
 logger = logging.getLogger("agentics-mcp.mcp_client")
 
@@ -202,7 +202,7 @@ async def generate_api_migration_plan(from_api: str, to_api: str, base_url: str 
         logger.info(f"MCP tool generate_api_migration_plan called: {from_api} -> {to_api}")
         
         # Import the migration generator function
-        from mermaid_generator import generate_api_migration_plan_internal
+        from mermaid import generate_api_migration_plan_internal
         
         result = await generate_api_migration_plan_internal(from_api, to_api, base_url)
         logger.info(f"MCP tool generate_api_migration_plan completed successfully: {from_api} -> {to_api}")
