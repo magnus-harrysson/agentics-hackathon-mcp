@@ -38,16 +38,17 @@ async def get_backstage_component_relations(component_name: str = "aldente-servi
     return await fetch_backstage_component_relations(component_name)
 
 @mcp.tool()
-async def get_backstage_api_entity(entity_name: str = "aldente-service-api") -> str:
+async def get_backstage_api_entity(entity_name: str = "aldente-service-api", field: str = "") -> str:
     """Fetch a Backstage catalog API entity by name using GitHub token authentication.
     
     Args:
         entity_name: The name of the API entity to fetch from Backstage catalog (default: "aldente-service-api")
+        field: Specific field to extract from the entity (e.g., "apiVersion", "spec", "metadata"). If empty, returns full entity.
         
     Returns:
-        The API entity information as JSON string, or error message if failed
+        The API entity information (full or specific field) as JSON string, or error message if failed
     """
-    return await fetch_backstage_api_entity(entity_name)
+    return await fetch_backstage_api_entity(entity_name, field)
 
 
 async def run_mcp():

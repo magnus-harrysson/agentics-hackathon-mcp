@@ -13,14 +13,15 @@ from config import config
 logger = logging.getLogger("agentics-mcp.api_client")
 
 
-async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api") -> str:
+async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", field: str = "") -> str:
     """Fetch a Backstage catalog API entity by name using GitHub token authentication.
     
     Args:
         entity_name: The name of the API entity to fetch (default: "aldente-service-api")
+        field: Specific field to extract from the entity (e.g., "apiVersion", "spec"). If empty, returns full entity.
         
     Returns:
-        The API entity information as JSON string, or error message if failed
+        The API entity information (full or specific field) as JSON string, or error message if failed
     """
     try:
         # Check if GitHub token is configured
@@ -60,8 +61,13 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api") -
             logger.info(f"Response status: {response.status_code}")
             response.raise_for_status()
             
-        # Get the response data s
+        # Get the response data and clean up newline characters
         response_data = response.json()
+        
+        # If a specific field is requested, extract it
+        if field:
+            field_data = response_data.get(field, [])
+            return json.dumps(field_data, indent=2)
         
         # Return the response as formatted JSON
         return json.dumps(response_data, indent=2)
