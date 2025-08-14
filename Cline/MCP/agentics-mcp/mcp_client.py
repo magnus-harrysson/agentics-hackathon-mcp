@@ -10,10 +10,11 @@ from api_client import (
     fetch_backstage_api_entity, 
     fetch_backstage_component_relations,
     fetch_backstage_systems,
-    fetch_backstage_components_by_system
+    fetch_backstage_components_by_system,
+    fetch_deprecated_entities
 )
 from config import config
-from mermaid_generator import generate_component_dependency_diagram, generate_systems_overview_diagram
+from mermaid_generator import generate_component_dependency_diagram, generate_systems_overview_diagram, generate_single_system_diagram
 
 logger = logging.getLogger("agentics-mcp.mcp_client")
 
@@ -139,6 +140,48 @@ async def generate_component_dependency_mermaid(component_name: str, base_url: s
         logger.error(f"MCP tool generate_component_dependency_mermaid failed for component {component_name}: {e}", exc_info=True)
         import json
         return json.dumps({"error": "MCP tool error", "message": f"Tool execution failed: {str(e)}", "component": component_name}, indent=2)
+
+@mcp.tool()
+async def generate_single_system_mermaid(system_name: str, base_url: str = "") -> str:
+    """Generate a Mermaid diagram for a single system showing its components and relationships using only Backstage API data.
+    
+    Args:
+        system_name: The name of the system to generate diagram for (required)
+        base_url: Optional base URL override for Backstage API (if empty, uses configured default)
+        
+    Returns:
+        Mermaid diagram as string showing single system architecture, or error message if failed
+    """
+    try:
+        logger.info(f"MCP tool generate_single_system_mermaid called for system: {system_name}")
+        result = await generate_single_system_diagram(system_name)
+        logger.info(f"MCP tool generate_single_system_mermaid completed successfully for system: {system_name}")
+        return result
+    except Exception as e:
+        logger.error(f"MCP tool generate_single_system_mermaid failed for system {system_name}: {e}", exc_info=True)
+        import json
+        return json.dumps({"error": "MCP tool error", "message": f"Tool execution failed: {str(e)}", "system": system_name}, indent=2)
+
+@mcp.tool()
+async def list_deprecated_entities(base_url: str = "") -> str:
+    """List all deprecated entities (APIs and components) from Backstage catalog.
+    
+    Args:
+        base_url: Optional base URL override for Backstage API (if empty, uses configured default)
+        
+    Returns:
+        List of deprecated entity names with their types as JSON string, or error message if failed
+    """
+    try:
+        logger.info("MCP tool list_deprecated_entities called")
+        url_override = base_url if base_url else None
+        result = await fetch_deprecated_entities(url_override)
+        logger.info("MCP tool list_deprecated_entities completed successfully")
+        return result
+    except Exception as e:
+        logger.error(f"MCP tool list_deprecated_entities failed: {e}", exc_info=True)
+        import json
+        return json.dumps({"error": "MCP tool error", "message": f"Tool execution failed: {str(e)}"}, indent=2)
 
 # Direct functions for testing
 async def generate_systems_overview_mermaid_direct() -> str:

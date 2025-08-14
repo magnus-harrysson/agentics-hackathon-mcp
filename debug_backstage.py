@@ -21,7 +21,8 @@ from api_client import (
     fetch_backstage_api_entity, 
     fetch_backstage_component_relations,
     fetch_backstage_systems,
-    fetch_backstage_components_by_system
+    fetch_backstage_components_by_system,
+    fetch_deprecated_entities
 )
 from config import config
 
@@ -78,13 +79,23 @@ async def main():
         print(f"Error getting API entity: {e}")
         print()
 
+    print("4.5. Testing NEW fetch_deprecated_entities...")
+    try:
+        deprecated_result = await fetch_deprecated_entities()
+        print("Deprecated Entities Response:")
+        print(deprecated_result)
+        print()
+    except Exception as e:
+        print(f"Error getting deprecated entities: {e}")
+        print()
+
     print("5. Testing new Mermaid generation tool...")
     try:
         from mcp_client import generate_mermaid_for_component
         
-        # Test the mermaid generation directly for aldente-frontend
-        mermaid_result = await generate_mermaid_for_component("aldente-frontend")
-        print("Mermaid Diagram for aldente-frontend:")
+        # Test the mermaid generation directly for order-service (uses deprecated API)
+        mermaid_result = await generate_mermaid_for_component("order-service")
+        print("Mermaid Diagram for order-service:")
         print(mermaid_result)
         print()
     except Exception as e:
@@ -104,6 +115,21 @@ async def main():
         print()
     except Exception as e:
         print(f"Error testing systems overview mermaid generation: {e}")
+        import traceback
+        traceback.print_exc()
+        print()
+
+    print("7. Testing new Single System Mermaid tool...")
+    try:
+        from mermaid_generator import generate_single_system_diagram
+        
+        # Test the single system mermaid generation for aldente-app
+        single_system_result = await generate_single_system_diagram("aldente-app")
+        print("Single System Mermaid Diagram for aldente-app:")
+        print(single_system_result)
+        print()
+    except Exception as e:
+        print(f"Error testing single system mermaid generation: {e}")
         import traceback
         traceback.print_exc()
         print()

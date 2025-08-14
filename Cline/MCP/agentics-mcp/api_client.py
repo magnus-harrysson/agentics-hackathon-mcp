@@ -358,6 +358,120 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
     return json.dumps({"error": "Failed", "message": f"Failed to fetch Backstage systems after {max_retries} attempts"}, indent=2)
 
 
+async def fetch_deprecated_entities(base_url: str = None) -> str:
+    """Fetch all deprecated entities (APIs and components) from Backstage catalog.
+    
+    Args:
+        base_url: Optional base URL override for Backstage API
+        
+    Returns:
+        List of deprecated entity names as JSON string, or error message if failed
+    """
+    import asyncio
+    import random
+    
+    # Retry configuration
+    max_retries = 5
+    base_delay = 1.0  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            # Check if Backstage token is configured
+            backstage_token = config.backstage_token
+            if not backstage_token:
+                return json.dumps({"error": "Backstage token not configured", "message": "Please set the BACKSTAGE_TOKEN environment variable."}, indent=2)
+            
+            # Use provided base URL or fall back to config
+            api_base_url = base_url or config.backstage_base_url
+            url = f"{api_base_url}/api/catalog/entities/by-query?filter=spec.lifecycle=deprecated"
+            
+            # Set up headers with Bearer token
+            headers = {
+                "Authorization": f"Bearer {backstage_token}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+            
+            # Make the API call with enhanced SSL configuration
+            import ssl
+            
+            # Create a more permissive SSL context
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
+            
+            async with httpx.AsyncClient(
+                verify=ssl_context, 
+                timeout=30.0,
+                limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+                http2=False  # Disable HTTP/2 to avoid potential issues
+            ) as client:
+                logger.info(f"Making request to: {url} (attempt {attempt + 1}/{max_retries})")
+                response = await client.get(url, headers=headers)
+                logger.info(f"Response status: {response.status_code}")
+                response.raise_for_status()
+                
+            # Get the response data
+            response_data = response.json()
+            
+            # Extract entity names from the response
+            deprecated_entities = []
+            for item in response_data.get('items', []):
+                entity_name = item.get('metadata', {}).get('name', '')
+                entity_kind = item.get('kind', '').lower()
+                if entity_name:
+                    deprecated_entities.append({
+                        "name": entity_name,
+                        "kind": entity_kind,
+                        "namespace": item.get('metadata', {}).get('namespace', 'default')
+                    })
+            
+            result = {
+                "deprecated_entities": deprecated_entities,
+                "total_count": len(deprecated_entities)
+            }
+            
+            logger.info(f"Successfully fetched deprecated entities on attempt {attempt + 1}")
+            return json.dumps(result, indent=2)
+            
+        except (httpx.HTTPError, ssl.SSLError) as e:
+            # Network or SSL error - retry with exponential backoff
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
+                logger.warning(f"Network/SSL error on attempt {attempt + 1}/{max_retries}: {e}. Retrying in {delay:.2f} seconds...")
+                await asyncio.sleep(delay)
+                continue
+            else:
+                logger.error(f"Failed after {max_retries} attempts: {e}")
+                return json.dumps({"error": "Network error", "message": f"Failed to fetch deprecated entities after {max_retries} attempts: {str(e)}"}, indent=2)
+                
+        except httpx.HTTPStatusError as e:
+            # HTTP error - don't retry for client errors (4xx)
+            if e.response.status_code < 500:
+                logger.error(f"HTTP client error {e.response.status_code}: {e}")
+                return json.dumps({"error": f"HTTP {e.response.status_code}", "message": str(e.response.text)}, indent=2)
+            # Server error (5xx) - retry
+            elif attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
+                logger.warning(f"HTTP server error {e.response.status_code} on attempt {attempt + 1}/{max_retries}. Retrying in {delay:.2f} seconds...")
+                await asyncio.sleep(delay)
+                continue
+            else:
+                logger.error(f"HTTP error after {max_retries} attempts: {e}")
+                return json.dumps({"error": f"HTTP {e.response.status_code}", "message": f"Server error after {max_retries} attempts: {e.response.text}"}, indent=2)
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing JSON response: {e}")
+            return json.dumps({"error": "JSON parsing error", "message": f"Failed to parse JSON response: {str(e)}"}, indent=2)
+        except Exception as e:
+            logger.error(f"Unexpected error fetching deprecated entities: {e}", exc_info=True)
+            return json.dumps({"error": "Unexpected error", "message": str(e)}, indent=2)
+    
+    # Should not reach here, but just in case
+    return json.dumps({"error": "Failed", "message": f"Failed to fetch deprecated entities after {max_retries} attempts"}, indent=2)
+
+
 async def fetch_backstage_components_by_system(system_name: str, base_url: str = None) -> str:
     """Fetch all components for a specific system from Backstage catalog.
     
