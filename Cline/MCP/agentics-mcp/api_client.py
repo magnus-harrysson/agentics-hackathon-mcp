@@ -33,10 +33,10 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", f
     
     for attempt in range(max_retries):
         try:
-            # Check if GitHub token is configured
-            github_token = config.github_token
-            if not github_token:
-                return "Error: GitHub token not configured. Please set the GITHUB_TOKEN environment variable."
+            # Check if Backstage token is configured
+            backstage_token = config.backstage_token
+            if not backstage_token:
+                return "Error: Backstage token not configured. Please set the BACKSTAGE_TOKEN environment variable."
             
             # Construct the URL using configured base URL
             base_url = f"{config.backstage_base_url}/api/catalog/entities/by-name/api/default"
@@ -44,7 +44,7 @@ async def fetch_backstage_api_entity(entity_name: str = "aldente-service-api", f
             
             # Set up headers with Bearer token
             headers = {
-                "Authorization": f"Bearer {github_token}",
+                "Authorization": f"Bearer {backstage_token}",
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
@@ -138,10 +138,10 @@ async def fetch_backstage_component_relations(component_name: str = "aldente-ser
     
     for attempt in range(max_retries):
         try:
-            # Check if GitHub token is configured
-            github_token = config.github_token
-            if not github_token:
-                return "Error: GitHub token not configured. Please set the GITHUB_TOKEN environment variable."
+            # Check if Backstage token is configured
+            backstage_token = config.backstage_token
+            if not backstage_token:
+                return "Error: Backstage token not configured. Please set the BACKSTAGE_TOKEN environment variable."
             
             # Construct the URL using configured base URL for component entities
             base_url = f"{config.backstage_base_url}/api/catalog/entities/by-name/component/default"
@@ -149,7 +149,7 @@ async def fetch_backstage_component_relations(component_name: str = "aldente-ser
             
             # Set up headers with Bearer token
             headers = {
-                "Authorization": f"Bearer {github_token}",
+                "Authorization": f"Bearer {backstage_token}",
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
@@ -233,10 +233,10 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
     
     for attempt in range(max_retries):
         try:
-            # Check if GitHub token is configured
-            github_token = config.github_token
-            if not github_token:
-                return json.dumps({"error": "GitHub token not configured", "message": "Please set the GITHUB_TOKEN environment variable."}, indent=2)
+            # Check if Backstage token is configured
+            backstage_token = config.backstage_token
+            if not backstage_token:
+                return json.dumps({"error": "Backstage token not configured", "message": "Please set the BACKSTAGE_TOKEN environment variable."}, indent=2)
             
             # Use provided base URL or fall back to config
             api_base_url = base_url or config.backstage_base_url
@@ -244,7 +244,7 @@ async def fetch_backstage_systems(base_url: str = None) -> str:
             
             # Set up headers with Bearer token
             headers = {
-                "Authorization": f"Bearer {github_token}",
+                "Authorization": f"Bearer {backstage_token}",
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
@@ -347,10 +347,10 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
     
     for attempt in range(max_retries):
         try:
-            # Check if GitHub token is configured
-            github_token = config.github_token
-            if not github_token:
-                return json.dumps({"error": "GitHub token not configured", "message": "Please set the GITHUB_TOKEN environment variable."}, indent=2)
+            # Check if Backstage token is configured
+            backstage_token = config.backstage_token
+            if not backstage_token:
+                return json.dumps({"error": "Backstage token not configured", "message": "Please set the BACKSTAGE_TOKEN environment variable."}, indent=2)
             
             # Use provided base URL or fall back to config
             api_base_url = base_url or config.backstage_base_url
@@ -358,7 +358,7 @@ async def fetch_backstage_components_by_system(system_name: str, base_url: str =
             
             # Set up headers with Bearer token
             headers = {
-                "Authorization": f"Bearer {github_token}",
+                "Authorization": f"Bearer {backstage_token}",
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }

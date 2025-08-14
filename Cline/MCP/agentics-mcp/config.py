@@ -18,9 +18,9 @@ class Config:
         logger.info("Loading configuration from environment variables")
     
     @property
-    def github_token(self) -> Optional[str]:
-        """Get GitHub token from environment variable."""
-        return os.getenv('GITHUB_TOKEN')
+    def backstage_token(self) -> Optional[str]:
+        """Get Backstage token from environment variable."""
+        return os.getenv('BACKSTAGE_TOKEN')
     
     @property
     def project_name(self) -> str:
@@ -64,7 +64,7 @@ class Config:
             'api_version': self.api_version,
             'server_host': self.server_host,
             'server_port': self.server_port,
-            'github_token_configured': bool(self.github_token),
+            'backstage_token_configured': bool(self.backstage_token),
             'config_source': 'environment_variables'
         }
 

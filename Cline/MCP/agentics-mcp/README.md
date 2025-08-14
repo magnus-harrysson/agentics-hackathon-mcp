@@ -6,7 +6,7 @@ A robust MCP server providing tools for interacting with Backstage catalog entit
 
 - **Backstage Integration**: Fetch API entities, component relations, systems, and components
 - **Robust Retry Logic**: Exponential backoff with jitter for handling transient network/SSL errors
-- **GitHub Token Authentication**: Secure authentication using GitHub tokens
+- **Backstage Token Authentication**: Secure authentication using Backstage tokens
 - **Comprehensive Error Handling**: Smart error categorization and recovery
 - **FastAPI Endpoints**: Direct API access for testing and debugging
 - **Environment Variable Configuration**: Simple and secure configuration management
@@ -76,11 +76,12 @@ The server requires these environment variables to be configured:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `BACKSTAGE_BASE_URL` | Base URL for your Backstage instance | Yes |
-| `GITHUB_TOKEN` | GitHub token for authentication | Yes |
+| `BACKSTAGE_TOKEN` | Backstage authentication token | Yes |
 | `PROJECT_NAME` | Project name | No (default: agentics-mcp-project) |
 | `API_VERSION` | API version | No (default: v1) |
 | `SERVER_HOST` | Server host | No (default: 0.0.0.0) |
 | `SERVER_PORT` | Server port | No (default: 8000) |
+
 
 ### Setup Configuration
 
@@ -93,7 +94,7 @@ cp .env.config .env
 ```bash
 # Backstage Configuration
 BACKSTAGE_BASE_URL=https://your-backstage-instance.com
-GITHUB_TOKEN=your_github_token_here
+BACKSTAGE_TOKEN=your_backstage_token_here
 
 # Server Configuration
 PROJECT_NAME=agentics-mcp-project
@@ -122,7 +123,7 @@ Add this to your MCP client configuration:
       "args": ["/path/to/your/mcp_server_only.py"],
       "env": {
         "BACKSTAGE_BASE_URL": "https://your-backstage-instance.com",
-        "GITHUB_TOKEN": "your_github_token_here"
+        "BACKSTAGE_TOKEN": "your_backstage_token_here"
       }
     }
   }
@@ -201,9 +202,9 @@ If you encounter SSL errors:
 
 ### Authentication Errors
 If you get authentication errors:
-1. Verify your GitHub token is valid
+1. Verify your Backstage token is valid
 2. Ensure the token has proper permissions for your Backstage instance
-3. Check that the token is correctly set in your environment
+3. Check that the token is correctly set in your environment (use `BACKSTAGE_TOKEN`)
 
 ### Configuration Issues
 Use the `get_server_config` tool to verify your configuration is loaded correctly.
