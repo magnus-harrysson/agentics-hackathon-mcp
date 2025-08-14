@@ -1,28 +1,15 @@
-# Hello World MCP Server (Python)
+# MCP Server with OpenAPI functionality
 
-A simple "Hello World" Model Context Protocol (MCP) server implemented in Python using fastMCP with FastAPI endpoints. This server demonstrates the basic functionality of MCP by providing tools to interact with the Swagger Petstore OpenAPI specification, plus FastAPI endpoints for fetching OpenAPI specifications.
+A configurable MCP server with FastAPI endpoints for OpenAPI specification retrieval and GitHub integration.
 
 ## Features
 
-### MCP Tools
-This MCP server provides two tools:
-
-1. **fetch_pet_api_spec** - Fetch the PET API (Swagger Petstore) OpenAPI specification
-2. **get_pet_api_info** - Get basic information about the PET API specification
-
-### FastAPI Endpoints
-The server also includes FastAPI endpoints:
-
-1. **GET /** - Root endpoint with server information
-2. **GET /petstore.yaml** - Fetch swagger-petstore OpenAPI spec as YAML
-3. **GET /petstore.json** - Fetch swagger-petstore OpenAPI spec as JSON
-4. **GET /docs** - Interactive API documentation (Swagger UI)
-5. **GET /redoc** - Alternative API documentation (ReDoc)
-
-## Requirements
-
-- Python 3.11 or higher
-- fastMCP 2.11.2
+- MCP server with tools for fetching OpenAPI specifications
+- FastAPI endpoints for direct API access
+- Support for both JSON and YAML formats
+- Concurrent server operation (MCP + FastAPI)
+- Simple environment variable configuration
+- GitHub token integration support
 
 ## Installation
 
@@ -37,114 +24,140 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Configuration
+
+The server uses environment variables for all configuration. This approach is simple, secure, and follows best practices.
+
+### Setup Configuration
+
+1. Copy the template file:
+```bash
+cp .env.config .env
+```
+
+2. Edit `.env` with your values:
+```bash
+# MCP Server Configuration
+# Copy this file to .env and fill in your values
+
+# Project Configuration
+PROJECT_NAME=agentics-mcp-project
+API_VERSION=v1
+
+# Fast API Server Configuration
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+```
+
+### Configuration Parameters
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `PROJECT_NAME` | Name of your project | `agentics-mcp-project` |
+| `API_VERSION` | Current API version | `v1` |
+| `SERVER_HOST` | Server bind address | `0.0.0.0` |
+| `SERVER_PORT` | Server port number | `8000` |
+
+**Note**: The GitHub token should be configured in your MCP client configuration (see MCP Client Configuration section below), not in the .env file.
+
 ## Usage
 
-The server is designed to be used with MCP-compatible clients. It communicates via stdio (standard input/output).
+### Running the Server
 
-### Running the server directly
-
-The server supports multiple running modes:
-
-1. **Both MCP and FastAPI servers (default)**:
 ```bash
 python server.py
 ```
 
-2. **MCP server only**:
-```bash
-python server.py --mcp-only
-```
+The server will start both MCP and FastAPI services concurrently.
 
-3. **FastAPI server only**:
-```bash
-python server.py --fastapi-only
-```
+### MCP Tools
 
-When running FastAPI only, the server will be available at `http://localhost:8000`
+The server provides these MCP tools:
 
-### Configuration for MCP clients
+1. **fetch_api_specs** - Fetch OpenAPI specification in JSON or YAML format
+   - Parameters: `format` (json/yaml), `save_to_file` (optional)
 
-Add this configuration to your MCP settings file (Replace <path-to-repo>):  
+2. **get_api_infos** - Get basic information about the API
+   - Parameters: None
+
+3. **get_server_config** - Get current server configuration
+   - Parameters: None
+   - Returns: Current configuration (excluding sensitive data)
+
+### FastAPI Endpoints
+
+- `GET /`: Root endpoint with server information
+- `GET /petstore.yaml`: Get OpenAPI spec as YAML
+- `GET /petstore.json`: Get OpenAPI spec as JSON
+- `GET /docs`: Interactive API documentation
+- `GET /redoc`: Alternative API documentation
+
+### MCP Client Configuration
+
+Add this to your MCP client configuration:
 
 ```json
 {
   "mcpServers": {
-    "hello-world-python": {
-      "command": "/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/agentics-mcp/venv/bin/python",
-      "args": ["/<path-to-repo>/agentics-hackathon-mcp/Cline/MCP/agentics-mcp/server.py"]
+    "agentics-mcp": {
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 10,
+      "type": "stdio",
+      "command": "/path/to/your/venv/bin/python",
+      "args": ["/path/to/your/server.py"],
+      "env": {
+        "GITHUB_TOKEN": "your_github_token_here"
+      }
     }
   }
 }
 ```
 
-## Tools
-
-### fetch_pet_api_spec
-Fetch the PET API (Swagger Petstore) OpenAPI specification in JSON or YAML format, with optional file saving capability.
-
-**Parameters:**
-- `format` (string, optional): The format to return the specification in ("json" or "yaml"). Default: "json"
-- `save_to_file` (string, optional): Optional file path to save the specification to. If provided, the spec will be saved to this file.
-
-**Examples:**
-
-1. Get specification as JSON:
-```json
-{
-  "format": "json"
-}
-```
-
-2. Get specification as YAML:
-```json
-{
-  "format": "yaml"
-}
-```
-
-3. Save specification to file:
-```json
-{
-  "format": "json",
-  "save_to_file": "petstore-api.json"
-}
-```
-
-**Response:**
-- If `save_to_file` is not provided: Returns the complete OpenAPI specification in the requested format
-- If `save_to_file` is provided: Returns a success message confirming the file was saved
-
-### get_pet_api_info
-Get basic information about the PET API specification including title, version, description, and available endpoints.
-
-**Parameters:** None
-
-**Example:**
-```json
-{}
-```
-
-**Response:**
-```json
-{
-  "title": "Swagger Petstore - OpenAPI 3.0",
-  "version": "1.0.27",
-  "description": "This is a sample Pet Store Server based on the OpenAPI 3.0 specification...",
-  "base_url": "https://petstore3.swagger.io/api/v3",
-  "paths_count": 13,
-  "available_paths": ["/pet", "/pet/findByStatus", "/pet/findByTags", ...]
-}
-```
+**Important**: Replace the paths and values with your actual configuration:
+- Update the `command` path to point to your virtual environment's Python executable
+- Update the `args` path to point to your server.py file
+- Set your actual GitHub token in the `GITHUB_TOKEN` environment variable
+- Customize `PROJECT_NAME` and `API_VERSION` as needed
 
 ## Development
 
-This server uses the fastMCP library for simplified MCP server development. The main components are:
+### Project Structure
 
-- **Server initialization**: Creates a FastMCP server instance
-- **Tool registration**: Uses decorators to register tools with automatic schema generation
-- **Tool handlers**: Simple functions that implement tool logic
-- **Automatic transport**: fastMCP handles stdio communication automatically
+```
+agentics-mcp/
+├── server.py          # Main server entry point
+├── mcp_client.py      # MCP server functionality
+├── api_client.py      # FastAPI endpoints and API logic
+├── config.py          # Configuration management
+├── .env.config        # Environment variables template
+├── requirements.txt   # Python dependencies
+└── README.md         # This file
+```
+
+### Adding New Configuration
+
+1. Add the parameter to the `Config` class in `config.py`
+2. Add the environment variable to `.env.config`
+3. Update this README with the new parameter
+
+### Testing Configuration
+
+Use the `get_server_config` MCP tool to verify your configuration is loaded correctly:
+
+```bash
+# This will show current config without sensitive data
+python -c "from config import config; print(config.to_dict())"
+```
+
+## Requirements
+
+- Python 3.11 or higher
+- fastMCP 2.11.2
+- FastAPI
+- httpx
+- PyYAML
 
 ## License
 
-This is a simple example project for demonstration purposes.
+This is a demonstration project for MCP server development.
